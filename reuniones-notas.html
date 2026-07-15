@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hilo del día — Notas de reuniones</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root{
+    --bg: #14232B;
+    --surface: #1D343E;
+    --surface-2: #26414C;
+    --thread: #3A5560;
+    --marigold: #E3A72F;
+    --berry: #C1555A;
+    --text: #F2EFE6;
+    --muted: #9FB0AF;
+    --ok: #7FAE8E;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Public Sans', sans-serif;
+    min-height:100vh;
+    padding-bottom: 60px;
+  }
+  header{
+    padding: 28px 20px 18px;
+    border-bottom: 1px solid var(--surface-2);
+  }
+  .eyebrow{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--marigold);
+    margin-bottom: 6px;
+  }
+  h1{
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 30px;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .subtitle{
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+    max-width: 46ch;
+  }
+
+  .backup-bar{
+    display:flex;
+    gap:8px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .backup-btn{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background: var(--surface);
+    border: 1px solid var(--surface-2);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 12px;
+    cursor:pointer;
+  }
+  .backup-btn.primary{
+    background: var(--marigold);
+    color: #1B140A;
+    border: none;
+    font-weight:600;
+  }
+  .backup-note{
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
+  main{ padding: 22px 16px 0; }
+
+  .day-nav{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .day-nav button{
+    background: var(--surface);
+    border: 1px solid var(--surface-2);
+    color: var(--text);
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+    cursor:pointer;
+  }
+  .day-nav input[type="date"]{
+    flex:1;
+    background: var(--surface);
+    border: 1px solid var(--surface-2);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color-scheme: dark;
+  }
+  .day-nav .today-btn{
+    width: auto;
+    padding: 0 12px;
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  details.import-box{
+    margin-bottom: 20px;
+    border: 1px dashed var(--thread);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  details.import-box summary{
+    cursor:pointer;
+    font-size: 13px;
+    color: var(--marigold);
+    font-weight: 600;
+  }
+  .import-hint{
+    font-size: 12px;
+    color: var(--muted);
+    margin: 8px 0;
+    line-height: 1.5;
+  }
+  .import-box textarea{
+    min-height: 90px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+  }
+  .import-actions{
+    display:flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+  }
+  .import-actions button{
+    background: var(--marigold);
+    color: #1B140A;
+    border:none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-weight:600;
+    font-size: 13px;
+    cursor:pointer;
+  }
+
+  .add-row{
+    display:flex;
+    gap:8px;
+    margin-bottom: 22px;
+  }
+  .add-row input{
+    flex:1;
+    background: var(--surface);
+    border: 1px solid var(--surface-2);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family: 'Public Sans', sans-serif;
+    font-size: 14px;
+  }
+  .add-row input::placeholder{ color: var(--muted); }
+  .add-row button{
+    background: var(--marigold);
+    color: #1B140A;
+    border:none;
+    border-radius: 10px;
+    padding: 0 18px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor:pointer;
+  }
+
+  .thread-wrap{
+    position: relative;
+    padding-left: 26px;
+  }
+  .thread-line{
+    position:absolute;
+    left: 9px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: linear-gradient(var(--thread), var(--thread) 70%, transparent);
+  }
+
+  .card{
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--surface-2);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card::before{
+    content:'';
+    position:absolute;
+    left: -22px;
+    top: 22px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--marigold);
+    border: 2px solid var(--bg);
+  }
+  .card.has-note::before{ background: var(--ok); }
+
+  .card-top{
+    display:flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .time{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--marigold);
+    white-space: nowrap;
+    padding-top: 2px;
+  }
+  .title{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 17px;
+    line-height: 1.3;
+    flex: 1;
+  }
+  .del-btn{
+    background:none;
+    border:none;
+    color: var(--muted);
+    font-size: 18px;
+    cursor:pointer;
+    line-height:1;
+    padding: 2px 4px;
+  }
+
+  .note-area{ margin-top: 12px; }
+  textarea{
+    width:100%;
+    min-height: 60px;
+    background: var(--surface-2);
+    border: 1px solid var(--thread);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-family: 'Public Sans', sans-serif;
+    font-size: 14px;
+    line-height:1.5;
+    resize: vertical;
+  }
+  textarea::placeholder{ color: var(--muted); }
+
+  .mic-hint{
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 8px;
+    line-height: 1.4;
+  }
+
+  .photo-row{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .photo-btn{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background: var(--surface-2);
+    border: 1px solid var(--thread);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 12px;
+    cursor:pointer;
+  }
+  .photo-thumb-wrap{ position: relative; display:inline-block; }
+  .photo-thumb{
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--thread);
+    display:block;
+  }
+  .photo-remove{
+    position:absolute;
+    top:-6px; right:-6px;
+    background: var(--berry);
+    color:#fff;
+    border:none;
+    border-radius: 50%;
+    width:18px; height:18px;
+    font-size: 11px;
+    line-height:1;
+    cursor:pointer;
+  }
+
+  .saved-tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--ok);
+    margin-top: 8px;
+    display:none;
+  }
+
+  .empty{
+    color: var(--muted);
+    font-size: 14px;
+    padding: 30px 6px;
+    text-align:center;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+  }
+
+  footer{
+    text-align:center;
+    color: var(--muted);
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    padding: 30px 20px 10px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Despacho · Bitácora diaria</div>
+  <h1>Hilo del día</h1>
+  <div class="subtitle" id="subtitle-text">Cada reunión, un punto en el hilo.</div>
+  <div class="backup-bar">
+    <button class="backup-btn primary" id="download-btn">⬇ Descargar respaldo</button>
+    <button class="backup-btn" id="upload-btn">📂 Cargar respaldo</button>
+    <input type="file" accept="application/json" id="upload-input" style="display:none;" />
+  </div>
+  <div class="backup-note" id="sync-status">Conectando con Google Sheets...</div>
+</header>
+
+<main>
+  <div class="day-nav">
+    <button id="prev-day">‹</button>
+    <input type="date" id="date-picker" />
+    <button id="next-day">›</button>
+    <button class="today-btn" id="today-btn">Hoy</button>
+  </div>
+
+  <details class="import-box">
+    <summary>Cargar historial completo (pegar texto de varias fechas)</summary>
+    <div class="import-hint">
+      Pega un bloque con encabezados de fecha así:<br>
+      <code>## 2026-07-09</code><br>
+      <code>8:00 - Eucaristía</code><br>
+      <code>9:00 - Ceremonia maya parque la Unión</code><br><br>
+      Se reparte automáticamente cada reunión a su fecha. Si pegas sin encabezados, todo va al día que ves arriba.
+    </div>
+    <textarea id="import-text" placeholder="## 2026-07-09&#10;8:00 - Eucaristía&#10;9:00 - Ceremonia maya..."></textarea>
+    <div id="import-status" style="font-size:12px; margin-top:8px; display:none; font-family:'IBM Plex Mono', monospace;"></div>
+    <div class="import-actions">
+      <button id="import-btn">Importar</button>
+    </div>
+  </details>
+
+  <div class="add-row">
+    <input id="new-time" style="max-width:70px; text-align:center;" placeholder="9:00" />
+    <input id="new-title" placeholder="Tema de la reunión..." />
+    <button id="add-btn">Añadir</button>
+  </div>
+
+  <div class="thread-wrap">
+    <div class="thread-line"></div>
+    <div id="list"></div>
+  </div>
+  <div id="empty-msg" class="empty" style="display:none;">Aún no hay reuniones en el hilo de este día. Añádelas arriba o impórtalas.</div>
+</main>
+
+<footer>hilo del día — todo en memoria, respaldo bajo tu control</footer>
+
+<script>
+// Entire app state lives in memory, backed by a Google Sheet via Apps Script.
+// allData = { "YYYY-MM-DD": [ {id, time, title, note, photo:{base64,mimeType}|null} ] }
+let allData = {};
+let currentDate = todayStr();
+const API_URL = 'https://script.google.com/macros/s/AKfycbwzER4opCkdKKQSX7GCQ40-PnERJ5lFcGJae_zRBTCONmFRmel_Snu_bax_MP6pFxax/exec';
+let sheetsConnected = false;
+const loadedDates = new Set();
+
+function setSyncStatus(text, ok){
+  const el = document.getElementById('sync-status');
+  el.textContent = text;
+  el.style.color = ok === true ? 'var(--ok)' : (ok === false ? 'var(--berry)' : 'var(--muted)');
+}
+
+async function checkConnection(){
+  try{
+    const res = await fetch(API_URL + '?action=loadDates');
+    if(!res.ok) throw new Error('status ' + res.status);
+    await res.json();
+    sheetsConnected = true;
+    setSyncStatus('Conectado a Google Sheets ✓', true);
+  }catch(e){
+    sheetsConnected = false;
+    setSyncStatus('Sin conexión a la hoja — trabajando en memoria local. Descarga un respaldo para no perder nada.', false);
+  }
+}
+
+async function loadFromSheet(date){
+  if(!sheetsConnected || loadedDates.has(date)) return;
+  try{
+    const res = await fetch(API_URL + '?action=load&date=' + encodeURIComponent(date));
+    const data = await res.json();
+    if(data.ok && data.meetings && data.meetings.length > 0){
+      allData[date] = data.meetings;
+    }
+    loadedDates.add(date);
+    if(date === currentDate) render();
+  }catch(e){
+    // keep whatever is already in memory
+  }
+}
+
+let saveTimers = {};
+function scheduleSaveToSheet(date){
+  if(!sheetsConnected) return;
+  clearTimeout(saveTimers[date]);
+  saveTimers[date] = setTimeout(() => saveToSheet(date), 700);
+}
+
+async function saveToSheet(date){
+  if(!sheetsConnected) return;
+  try{
+    await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' }, // avoids CORS preflight with Apps Script
+      body: JSON.stringify({ action: 'save', date: date, meetings: allData[date] || [] })
+    });
+    setSyncStatus('Guardado en Google Sheets ✓', true);
+  }catch(e){
+    setSyncStatus('No se pudo sincronizar (sin conexión). Sigue en memoria local.', false);
+  }
+}
+
+function todayStr(){
+  const d = new Date();
+  const off = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - off*60000);
+  return local.toISOString().slice(0,10);
+}
+
+function cryptoId(){
+  return Math.random().toString(36).slice(2,9);
+}
+
+function seedDefaults(){
+  return [
+    { id: cryptoId(), time: '9:00', title: 'Comité de camino Xolmalin Chiyax — materiales de muro', note: '', photo: null }
+  ];
+}
+
+function getMeetings(date){
+  if(!allData[date]){
+    allData[date] = (date === todayStr()) ? seedDefaults() : [];
+  }
+  return allData[date];
+}
+
+function formatDateLabel(dateStr){
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  const opts = { weekday: 'long', day: 'numeric', month: 'long' };
+  let label = dt.toLocaleDateString('es-GT', opts);
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+function timeToMinutes(t){
+  if(!t) return 999999; // sin hora va al final
+  const m = t.match(/^(\d{1,2}):(\d{2})/);
+  if(!m) return 999999;
+  return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+}
+
+function render(){
+  document.getElementById('subtitle-text').textContent =
+    formatDateLabel(currentDate) + ' — cada reunión, un punto en el hilo.';
+
+  const meetings = getMeetings(currentDate);
+  const list = document.getElementById('list');
+  const emptyMsg = document.getElementById('empty-msg');
+  list.innerHTML = '';
+
+  if(meetings.length === 0){
+    emptyMsg.style.display = 'block';
+    return;
+  }
+  emptyMsg.style.display = 'none';
+
+  meetings
+    .slice()
+    .sort((a,b) => timeToMinutes(a.time) - timeToMinutes(b.time))
+    .forEach(m => {
+      const card = document.createElement('div');
+      card.className = 'card' + (m.note && m.note.trim() ? ' has-note' : '');
+
+      card.innerHTML = `
+        <div class="card-top">
+          <div class="time">${escapeHtml(m.time || '--:--')}</div>
+          <div class="title">${escapeHtml(m.title)}</div>
+          <button class="del-btn" title="Eliminar">✕</button>
+        </div>
+        <div class="note-area">
+          <textarea placeholder="Acuerdos, responsable, pendientes...">${escapeHtml(m.note || '')}</textarea>
+          <div class="mic-hint">💡 Toca el cuadro y usa el micrófono de tu teclado para dictar</div>
+          <div class="photo-row">
+            ${m.photo ? `
+              <div class="photo-thumb-wrap">
+                <img class="photo-thumb" src="data:${m.photo.mimeType};base64,${m.photo.base64}" />
+                <button class="photo-remove" title="Quitar foto">✕</button>
+              </div>
+            ` : `
+              <button class="photo-btn">📷 Adjuntar foto</button>
+              <input type="file" accept="image/*" class="photo-input" style="display:none;" />
+            `}
+          </div>
+          <div class="saved-tag">Guardado ✓</div>
+        </div>
+      `;
+
+      const textarea = card.querySelector('textarea');
+      const savedTag = card.querySelector('.saved-tag');
+      const delBtn = card.querySelector('.del-btn');
+      const photoBtn = card.querySelector('.photo-btn');
+      const photoInput = card.querySelector('.photo-input');
+      const photoRemoveBtn = card.querySelector('.photo-remove');
+
+      let saveTimer = null;
+      textarea.addEventListener('input', () => {
+        m.note = textarea.value;
+        card.classList.toggle('has-note', !!m.note.trim());
+        savedTag.style.display = 'none';
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+          savedTag.style.display = 'block';
+        }, 500);
+        scheduleSaveToSheet(currentDate);
+      });
+
+      delBtn.addEventListener('click', () => {
+        allData[currentDate] = allData[currentDate].filter(x => x.id !== m.id);
+        scheduleSaveToSheet(currentDate);
+        render();
+      });
+
+      if(photoBtn && photoInput){
+        photoBtn.addEventListener('click', () => photoInput.click());
+        photoInput.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if(!file) return;
+          photoBtn.textContent = 'Procesando...';
+          resizeImageToBase64(file).then(({base64, mimeType}) => {
+            m.photo = { base64, mimeType };
+            scheduleSaveToSheet(currentDate);
+            render();
+          }).catch(err => {
+            photoBtn.textContent = '📷 Adjuntar foto';
+            alert('No se pudo procesar la foto: ' + err.message);
+          });
+        });
+      }
+
+      if(photoRemoveBtn){
+        photoRemoveBtn.addEventListener('click', () => {
+          m.photo = null;
+          scheduleSaveToSheet(currentDate);
+          render();
+        });
+      }
+
+      list.appendChild(card);
+    });
+}
+
+function resizeImageToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Imagen inválida'));
+      img.onload = () => {
+        const MAX_DIM = 1000;
+        let { width, height } = img;
+        if(width > MAX_DIM || height > MAX_DIM){
+          if(width > height){
+            height = Math.round(height * (MAX_DIM / width));
+            width = MAX_DIM;
+          } else {
+            width = Math.round(width * (MAX_DIM / height));
+            height = MAX_DIM;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        resolve({ base64: dataUrl.split(',')[1], mimeType: 'image/jpeg' });
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// --- Add meeting manually ---
+document.getElementById('add-btn').addEventListener('click', () => {
+  const timeInput = document.getElementById('new-time');
+  const titleInput = document.getElementById('new-title');
+  if(!titleInput.value.trim()) return;
+
+  getMeetings(currentDate).push({
+    id: cryptoId(),
+    time: timeInput.value.trim(),
+    title: titleInput.value.trim(),
+    note: '',
+    photo: null
+  });
+  timeInput.value = '';
+  titleInput.value = '';
+  scheduleSaveToSheet(currentDate);
+  render();
+});
+
+// --- Bulk text import (multi-date) ---
+document.getElementById('import-btn').addEventListener('click', () => {
+  const raw = document.getElementById('import-text').value;
+  const statusEl = document.getElementById('import-status');
+  if(!raw.trim()) return;
+
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  let activeDate = currentDate;
+  let count = 0;
+  const datesTouched = new Set();
+
+  lines.forEach(line => {
+    const dateHeader = line.match(/^#+\s*(\d{4}-\d{2}-\d{2})/);
+    if(dateHeader){
+      activeDate = dateHeader[1];
+      return;
+    }
+    const match = line.match(/^(\d{1,2}:\d{2})\s*[-–—:]?\s*(.*)$/);
+    let time = '', title = line;
+    if(match){
+      time = match[1];
+      title = match[2].trim() || line;
+    }
+    if(!title) return;
+    getMeetings(activeDate).push({ id: cryptoId(), time, title, note: '', photo: null });
+    count++;
+    datesTouched.add(activeDate);
+  });
+
+  document.getElementById('import-text').value = '';
+  statusEl.style.display = 'block';
+  statusEl.style.color = count > 0 ? 'var(--ok)' : 'var(--berry)';
+  statusEl.textContent = count > 0
+    ? 'Importadas ' + count + ' reuniones en ' + datesTouched.size + ' fecha(s) ✓'
+    : 'No se detectó ninguna reunión en el texto pegado.';
+
+  datesTouched.forEach(d => scheduleSaveToSheet(d));
+  render();
+});
+
+// --- Date navigation ---
+function gotoDate(dateStr){
+  currentDate = dateStr;
+  document.getElementById('date-picker').value = dateStr;
+  render();
+  loadFromSheet(dateStr);
+}
+document.getElementById('date-picker').addEventListener('change', (e) => gotoDate(e.target.value));
+document.getElementById('prev-day').addEventListener('click', () => {
+  const d = new Date(currentDate + 'T12:00:00');
+  d.setDate(d.getDate() - 1);
+  gotoDate(d.toISOString().slice(0,10));
+});
+document.getElementById('next-day').addEventListener('click', () => {
+  const d = new Date(currentDate + 'T12:00:00');
+  d.setDate(d.getDate() + 1);
+  gotoDate(d.toISOString().slice(0,10));
+});
+document.getElementById('today-btn').addEventListener('click', () => gotoDate(todayStr()));
+
+// --- Backup: download as a file (no network needed) ---
+document.getElementById('download-btn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'reuniones-respaldo-' + todayStr() + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+// --- Backup: restore from a file ---
+document.getElementById('upload-btn').addEventListener('click', () => {
+  document.getElementById('upload-input').click();
+});
+document.getElementById('upload-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const parsed = JSON.parse(reader.result);
+      // Merge: incoming data wins for dates it includes, but doesn't erase dates it doesn't mention
+      Object.keys(parsed).forEach(date => {
+        allData[date] = parsed[date];
+      });
+      render();
+      alert('Respaldo cargado ✓');
+    }catch(err){
+      alert('El archivo no es un respaldo válido: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+});
+
+// --- Init ---
+document.getElementById('date-picker').value = currentDate;
+render();
+checkConnection().then(() => loadFromSheet(currentDate));
+</script>
+
+</body>
+</html>
