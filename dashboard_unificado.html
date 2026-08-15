@@ -1,0 +1,2315 @@
+<!DOCTYPE html>
+<html lang="es-GT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de Ejecución Presupuestaria — Totonicapán</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,600;0,700;1,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --ink:#16233A; --ink-soft:#2C3B54; --paper:#EFEAE0; --paper-2:#FBF9F4; --card:#FFFFFF;
+  --rule:#D9D1BE; --rule-strong:#C3B89E; --gold:#A9812B; --gold-soft:#D8BE7E;
+  --good:#2F6B4F; --good-bg:#E5EFE8; --warn:#B0791F; --warn-bg:#F4E9D3;
+  --saldo-green:#3E9C63;
+  --bad:#A23E31; --bad-bg:#F6E4E0; --neutral:#5B6373; --neutral-bg:#E7E5DD;
+  --text:#20293A; --text-soft:#5B6373; --text-faint:#8A8F9C;
+  --serif:'Spectral',Georgia,serif; --sans:'IBM Plex Sans',-apple-system,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --radius:10px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:var(--paper);color:var(--text);font-family:var(--sans);padding-bottom:60px;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px;}
+
+header.top{background:var(--ink);color:#EDE7D6;border-bottom:3px solid var(--gold);padding:22px 0 0;}
+header.top .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);margin:0 0 6px;}
+header.top h1{font-family:var(--serif);font-weight:700;font-size:clamp(22px,4vw,30px);margin:0 0 10px;}
+header.top .meta-row{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:#C8CEDB;align-items:center;padding-bottom:16px;}
+header.top .meta-row b{color:#F1EAD3;font-weight:600;}
+header.top select{font-family:var(--mono);font-size:12.5px;background:var(--ink-soft);color:#F1EAD3;border:1px solid #3A4A66;border-radius:6px;padding:5px 8px;}
+
+/* top-level view tabs */
+.view-tabs{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.view-tabs::-webkit-scrollbar{display:none;}
+.view-tab{font-family:var(--sans);font-weight:600;font-size:13.5px;padding:12px 20px;background:none;border:none;color:#9AA4B8;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-3px;}
+.view-tab.active{color:#F1EAD3;border-bottom-color:var(--gold);}
+.view-panel{display:none;}
+.view-panel.active{display:block;}
+
+.banner{margin-top:16px;border:1px solid var(--warn);background:var(--warn-bg);color:#6E4A0F;border-radius:var(--radius);padding:11px 16px;font-size:13px;display:none;}
+.banner.show{display:block;}
+
+/* hero / stat band */
+.hero{display:grid;grid-template-columns:220px 1fr;gap:30px;align-items:center;background:var(--paper-2);border:1px solid var(--rule);border-radius:var(--radius);padding:26px;margin-top:26px;}
+@media(max-width:700px){.hero{grid-template-columns:1fr;justify-items:center;text-align:center;}}
+.seal{position:relative;width:190px;height:190px;flex:none;}
+.seal svg{width:100%;height:100%;display:block;}
+.seal-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.seal-pct{font-family:var(--serif);font-weight:700;font-size:34px;color:var(--ink);line-height:1;}
+.seal-label{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-soft);margin-top:4px;}
+.seal-ring-text{font-family:var(--mono);font-size:8px;letter-spacing:.05em;fill:var(--text-faint);}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;}
+@media(max-width:700px){.stat-grid{grid-template-columns:1fr 1fr;}}
+.stat{padding:8px 18px;border-left:1px solid var(--rule);}
+.stat:nth-child(3n+1){border-left:none;}
+@media(max-width:700px){.stat:nth-child(2n+1){border-left:none;}.stat:nth-child(3n+1){border-left:1px solid var(--rule);}}
+.stat .k{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--text-faint);margin-bottom:5px;}
+.stat .v{font-family:var(--serif);font-weight:600;font-size:21px;color:var(--ink);}
+.stat .v small{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text-soft);}
+
+/* stat band (simple 4-cell, used in Obras tab) */
+.stat-band{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:var(--paper-2);border:1px solid var(--rule);border-radius:10px;margin-top:24px;overflow:hidden;}
+@media(max-width:760px){.stat-band{grid-template-columns:1fr 1fr;}}
+.stat-band .cell{padding:16px 18px;border-left:1px solid var(--rule);}
+.stat-band .cell:first-child{border-left:none;}
+@media(max-width:760px){.stat-band .cell:nth-child(2n+1){border-left:none;}}
+.stat-band .k{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint);margin-bottom:6px;}
+.stat-band .v{font-family:var(--serif);font-weight:700;font-size:22px;color:var(--ink);}
+.stat-band .v.bad{color:var(--bad);}
+.stat-band .v small{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text-soft);}
+
+section.block{padding:30px 0 6px;}
+.section-head{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;border-bottom:1px solid var(--rule-strong);padding-bottom:9px;}
+.section-head .roman{font-family:var(--serif);font-style:italic;font-weight:600;color:var(--gold);font-size:15px;}
+.section-head h2{font-family:var(--serif);font-weight:600;font-size:19px;margin:0;color:var(--ink);}
+.section-head .cnt{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--text-faint);}
+.section-head .sub{margin-left:auto;font-size:12px;color:var(--text-faint);font-family:var(--mono);}
+
+.card{background:var(--card);border:1px solid var(--rule);border-radius:var(--radius);padding:18px 18px 14px;}
+.two-col{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;}
+@media(max-width:900px){.two-col{grid-template-columns:1fr;}}
+.card h3{font-family:var(--sans);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-soft);margin:0 0 12px;}
+.chart-box{position:relative;height:260px;}
+.legend-note{font-size:11px;color:var(--text-faint);margin-top:10px;font-family:var(--mono);}
+
+.table-scroll{overflow-x:auto;border:1px solid var(--rule);border-radius:var(--radius);background:var(--card);}
+table.data{width:100%;border-collapse:collapse;font-size:13px;min-width:760px;}
+table.data th,table.data td{padding:10px 12px;text-align:right;border-bottom:1px solid var(--rule);white-space:nowrap;}
+table.data th:first-child,table.data td:first-child{text-align:left;white-space:normal;}
+table.data thead th{font-family:var(--sans);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-soft);cursor:pointer;user-select:none;background:var(--paper-2);}
+table.data thead th:hover{color:var(--ink);}
+table.data thead th .arrow{font-size:9px;margin-left:3px;color:var(--gold);}
+th .th-sub, table.pend thead th .th-sub{display:block;font-family:var(--sans);font-weight:400;font-size:9.5px;text-transform:none;letter-spacing:0;color:var(--text-faint);margin-top:2px;white-space:normal;}
+table.data tbody tr:hover{background:var(--paper-2);}
+table.data td.name{font-family:var(--sans);font-weight:500;color:var(--ink);}
+table.data td.mono{font-family:var(--mono);}
+.pct-cell{display:inline-flex;align-items:center;gap:8px;}
+.pct-track{width:50px;height:6px;border-radius:3px;background:var(--rule);overflow:hidden;flex:none;}
+.pct-fill{height:100%;border-radius:3px;}
+
+.alert-list{display:flex;flex-direction:column;gap:10px;}
+.alert{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--rule);border-left:4px solid var(--text-faint);border-radius:8px;padding:12px 14px;background:var(--card);font-size:13.5px;line-height:1.45;}
+.alert.sev-alto{border-left-color:var(--bad);}
+.alert.sev-medio{border-left-color:var(--warn);}
+.alert .sev{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:4px;flex:none;margin-top:2px;font-weight:700;}
+.alert.sev-alto .sev{background:var(--bad-bg);color:var(--bad);}
+.alert.sev-medio .sev{background:var(--warn-bg);color:var(--warn);}
+.alert-empty{color:var(--text-faint);font-size:13px;padding:8px 2px;}
+
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+.controls input[type=text]{flex:1;min-width:220px;font-family:var(--sans);font-size:13.5px;padding:9px 12px;border:1px solid var(--rule);border-radius:8px;background:var(--paper-2);color:var(--text);}
+.controls input[type=text]:focus{outline:2px solid var(--gold);outline-offset:1px;}
+.chip{font-family:var(--sans);font-weight:600;font-size:12px;padding:7px 13px;border-radius:20px;border:1px solid var(--rule-strong);background:var(--card);color:var(--text-soft);cursor:pointer;user-select:none;}
+.chip.active{background:var(--ink);color:#F1EAD3;border-color:var(--ink);}
+
+table.pend{width:100%;border-collapse:collapse;font-size:13px;min-width:820px;}
+table.pend thead th{font-family:var(--sans);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-soft);background:var(--paper-2);padding:10px 12px;text-align:left;border-bottom:1px solid var(--rule);white-space:nowrap;}
+table.pend thead th.num{text-align:right;}
+table.pend td{padding:10px 12px;border-bottom:1px solid var(--rule);vertical-align:top;}
+table.pend td.num{text-align:right;font-family:var(--mono);white-space:nowrap;}
+table.pend tbody tr:hover{background:var(--paper-2);}
+table.pend td.obra{font-family:var(--sans);font-weight:500;color:var(--ink);max-width:360px;}
+table.pend td.meta{font-size:11.5px;color:var(--text-faint);}
+
+.tag{display:inline-block;font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600;white-space:nowrap;}
+.tag.bad{background:var(--bad-bg);color:var(--bad);}
+.tag.warn{background:var(--warn-bg);color:var(--warn);}
+.tag.good{background:var(--good-bg);color:var(--good);}
+.tag.neutral{background:var(--neutral-bg);color:var(--neutral);}
+
+.tree{border:1px solid var(--rule);border-radius:10px;background:var(--card);overflow:hidden;}
+details.prog{border-bottom:1px solid var(--rule);}
+details.prog:last-child{border-bottom:none;}
+details.prog>summary{list-style:none;cursor:pointer;padding:14px 18px;display:flex;align-items:center;gap:12px;background:var(--paper-2);}
+details.prog>summary::-webkit-details-marker{display:none;}
+details.prog>summary .arrow{font-family:var(--mono);color:var(--gold);font-size:11px;transition:transform .15s;}
+details.prog[open]>summary .arrow{transform:rotate(90deg);}
+details.prog>summary .name{font-family:var(--serif);font-weight:600;font-size:15px;color:var(--ink);}
+details.prog>summary .name .code{font-family:var(--mono);color:var(--gold);margin-right:6px;font-weight:600;}
+details.prog>summary .figs{margin-left:auto;display:flex;gap:16px;font-family:var(--mono);font-size:12px;color:var(--text-soft);}
+details.prog .inner{padding:6px 18px 14px 34px;}
+
+details.subp{margin:8px 0;}
+details.subp>summary{cursor:pointer;list-style:none;font-family:var(--sans);font-weight:600;font-size:12.5px;color:var(--text-soft);padding:6px 0;}
+details.subp>summary::-webkit-details-marker{display:none;}
+details.subp .inner{padding-left:16px;border-left:2px solid var(--rule);margin-left:4px;}
+
+.proy{margin:10px 0;padding:10px 12px;background:var(--paper-2);border-radius:8px;}
+.proy .head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
+.proy .head .name{font-family:var(--sans);font-weight:600;font-size:13px;color:var(--ink);}
+.proy .head .code{font-family:var(--mono);color:var(--gold);font-size:11px;}
+.proy .head .figs{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--text-soft);}
+
+.acti-label{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;color:var(--text-faint);margin:8px 0 4px;letter-spacing:.05em;}
+
+.obra-row{display:grid;grid-template-columns:1fr 90px 110px 110px 110px 70px;gap:10px;align-items:center;padding:6px 0;border-top:1px dashed var(--rule);font-size:12.5px;}
+.obra-row:first-of-type{border-top:none;}
+.obra-row .nm{color:var(--text);}
+.obra-row .nm .code{font-family:var(--mono);color:var(--text-faint);margin-right:5px;}
+.obra-row .num{font-family:var(--mono);text-align:right;color:var(--text-soft);}
+.renglon-toggle{cursor:pointer;font-family:var(--mono);font-size:10px;color:var(--gold);margin-left:6px;white-space:nowrap;}
+.renglon-toggle:hover{text-decoration:underline;}
+.renglon-detail{display:none;margin:4px 0 10px 18px;padding:8px 10px;background:var(--paper-2);border:1px solid var(--rule);border-radius:8px;overflow-x:auto;}
+.renglon-detail.open{display:block;}
+table.renglon-table{width:100%;border-collapse:collapse;font-size:11px;min-width:640px;}
+table.renglon-table th{font-family:var(--sans);font-weight:600;font-size:9.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--text-faint);text-align:left;padding:4px 6px;border-bottom:1px solid var(--rule-strong);}
+table.renglon-table th.num{text-align:right;}
+table.renglon-table td{padding:4px 6px;border-bottom:1px dashed var(--rule);color:var(--text);}
+table.renglon-table td.mono{font-family:var(--mono);color:var(--text-faint);white-space:nowrap;}
+table.renglon-table td.num{font-family:var(--mono);text-align:right;color:var(--text-soft);white-space:nowrap;}
+@media(max-width:700px){.obra-row{grid-template-columns:1fr 70px;}.obra-row .num:not(:last-child){display:none;}}
+@media(max-width:600px){.tab-btn{font-size:11.5px;padding:8px 12px;}}
+
+.tree-legend{position:sticky;top:0;z-index:5;box-shadow:0 2px 4px rgba(22,35,58,.06);display:grid;grid-template-columns:1fr 90px 110px 110px 110px 70px;gap:10px;align-items:end;padding:9px 18px;background:var(--paper-2);border:1px solid var(--rule);border-radius:10px 10px 0 0;border-bottom:none;font-family:var(--sans);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-soft);}
+.tree-legend span{text-align:right;}
+.tree-legend span:first-child{text-align:left;}
+.tree-legend .th-sub{display:block;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-faint);margin-top:2px;}
+.tree-legend + .tree{border-top-left-radius:0;border-top-right-radius:0;}
+@media(max-width:700px){.tree-legend{grid-template-columns:1fr 70px;}.tree-legend span:not(:first-child):not(:last-child){display:none;}}
+
+.help-text{font-size:12.5px;color:var(--text-soft);line-height:1.5;margin:0 0 12px;}
+.help-text code{background:var(--paper-2);padding:1px 5px;border-radius:4px;font-family:var(--mono);font-size:11.5px;}
+.empty{padding:30px;text-align:center;color:var(--text-faint);font-size:13px;}
+
+textarea.json-in{width:100%;min-height:140px;font-family:var(--mono);font-size:12px;border:1px solid var(--rule);border-radius:8px;padding:12px;resize:vertical;background:var(--paper-2);color:var(--text);}
+.btn{font-family:var(--sans);font-weight:600;font-size:13px;background:var(--ink);color:#F1EAD3;border:none;border-radius:8px;padding:10px 18px;cursor:pointer;}
+.btn:hover{background:var(--ink-soft);}
+.btn.secondary{background:var(--card);color:var(--ink);border:1px solid var(--rule-strong);}
+.btn.secondary:hover{background:var(--paper-2);}
+.btn.danger-ghost{background:none;border:1px solid var(--bad);color:var(--bad);padding:5px 9px;font-size:11px;}
+.row-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;}
+.status-msg{font-size:12.5px;font-family:var(--mono);padding:8px 12px;border-radius:6px;margin-top:10px;display:none;}
+.status-msg.ok{display:block;background:var(--good-bg);color:var(--good);}
+.status-msg.err{display:block;background:var(--bad-bg);color:var(--bad);}
+
+.manual-date{display:flex;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.manual-date label{font-size:12.5px;font-weight:600;color:var(--text-soft);}
+
+.snap-list{margin-top:20px;}
+.snap-row{display:flex;align-items:center;gap:14px;padding:9px 12px;border:1px solid var(--rule);border-radius:8px;margin-bottom:7px;font-size:12.5px;background:var(--paper-2);flex-wrap:wrap;}
+.snap-row .d{font-family:var(--mono);font-weight:600;color:var(--ink);min-width:150px;}
+.snap-row .d .hora{font-weight:400;color:var(--text-faint);}
+.snap-row .m{color:var(--text-soft);}
+.snap-row .sp{margin-left:auto;display:flex;gap:8px;}
+
+.tabs{display:flex;gap:4px;margin-bottom:14px;}
+.tab-btn{font-family:var(--sans);font-weight:600;font-size:12.5px;background:none;border:1px solid var(--rule);border-bottom:none;padding:9px 16px;border-radius:8px 8px 0 0;cursor:pointer;color:var(--text-soft);white-space:nowrap;flex-shrink:0;}
+.tab-btn.active{background:var(--card);color:var(--ink);border-color:var(--rule-strong);position:relative;top:1px;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+.diff-ok{color:var(--good);}
+.saldo-disp{color:var(--saldo-green) !important;font-weight:600;}
+.diff-bad{color:var(--bad);font-weight:600;}
+
+footer.foot{max-width:1180px;margin:36px auto 0;padding:16px 20px 0;border-top:1px solid var(--rule-strong);font-size:11.5px;color:var(--text-faint);font-family:var(--mono);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+
+@media (prefers-reduced-motion: reduce){ *{animation:none !important;transition:none !important;} }
+
+.print-renglones-btn{margin-left:10px;font-family:var(--sans);font-weight:600;font-size:10.5px;background:var(--card);color:var(--ink);border:1px solid var(--rule-strong);border-radius:6px;padding:3px 9px;cursor:pointer;}
+.print-renglones-btn:hover{background:var(--paper-2);}
+
+/* ============ Vista previa / descarga de renglones (modal) ============ */
+.rg-modal{display:none;position:fixed;inset:0;background:rgba(22,35,58,.6);z-index:1000;padding:26px 16px;overflow-y:auto;}
+.rg-modal.open{display:flex;justify-content:center;align-items:flex-start;}
+.rg-modal-inner{background:#fff;max-width:820px;width:100%;border-radius:10px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.4);}
+.rg-modal-toolbar{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 16px;background:var(--paper-2);border-bottom:1px solid var(--rule-strong);}
+.rg-modal-title{font-family:var(--mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);}
+.rg-modal-actions{display:flex;gap:8px;}
+.rg-btn{font-family:var(--sans);font-weight:600;font-size:12.5px;border-radius:6px;padding:7px 14px;cursor:pointer;border:1px solid var(--rule-strong);}
+.rg-btn-secondary{background:var(--card);color:var(--ink);}
+.rg-btn-secondary:hover{background:var(--paper);}
+.rg-btn-primary{background:var(--gold);color:#fff;border-color:var(--gold);}
+.rg-btn-primary:hover{background:#93701f;}
+.pr-sheet{padding:9mm 10mm;font-family:'IBM Plex Sans',Arial,sans-serif;color:#20293A;max-height:75vh;overflow-y:auto;}
+
+.pr-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:#A9812B;margin-bottom:2px;}
+.pr-h1{font-family:'Spectral',Georgia,serif;font-weight:700;font-size:15.5px;color:#16233A;margin:0 0 2px;}
+.pr-sub{font-size:9.5px;color:#5B6373;margin-bottom:4px;}
+.pr-hr{border:none;border-top:1.5px solid #A9812B;margin:4px 0 7px;}
+.pr-h2{font-family:'Spectral',Georgia,serif;font-weight:600;font-size:11px;color:#16233A;margin:8px 0 4px;}
+table.pr-ctx{width:100%;border-collapse:collapse;border:1px solid #D9D1BE;background:#FBF9F4;margin-bottom:6px;}
+table.pr-ctx td{padding:2.5px 8px;border-bottom:1px solid #D9D1BE;font-size:8.5px;vertical-align:top;}
+table.pr-ctx tr:last-child td{border-bottom:none;}
+td.pr-ctxlabel{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#8A8F9C;font-weight:700;width:30mm;}
+td.pr-ctxval{color:#20293A;}
+table.pr-stats{width:100%;border-collapse:collapse;border:1px solid #D9D1BE;background:#FBF9F4;margin-bottom:6px;}
+table.pr-stats td{padding:5px 6px;border-right:1px solid #D9D1BE;vertical-align:top;width:20%;}
+table.pr-stats td:last-child{border-right:none;}
+.pr-statlabel{font-family:'IBM Plex Mono',monospace;font-size:6.2px;color:#8A8F9C;font-weight:700;text-transform:uppercase;line-height:1.3;margin-bottom:2px;}
+.pr-statlabel span{font-weight:400;text-transform:none;}
+.pr-statval{font-family:'Spectral',Georgia,serif;font-weight:700;font-size:11px;color:#16233A;}
+.pr-statval.pr-green{color:#3E9C63;}
+.pr-pct{font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:500;color:#5B6373;}
+.pr-estado .tag{font-family:'IBM Plex Mono',monospace;font-size:7.5px;padding:2px 6px;border-radius:4px;font-weight:700;background:#F4E9D3;color:#B0791F;}
+table.pr-table{width:100%;border-collapse:collapse;font-size:7.3px;}
+table.pr-table thead th{font-family:'IBM Plex Sans',Arial,sans-serif;font-weight:700;font-size:6.6px;text-transform:uppercase;color:#5B6373;text-align:left;padding:3px 5px;border-bottom:1.2px solid #D9D1BE;background:#FBF9F4;}
+table.pr-table th.pr-num{text-align:right;}
+table.pr-table td{padding:2.5px 5px;border-bottom:0.5px dashed #D9D1BE;vertical-align:top;}
+table.pr-table td.pr-mono{font-family:'IBM Plex Mono',monospace;color:#8A8F9C;white-space:nowrap;}
+table.pr-table td.pr-num{font-family:'IBM Plex Mono',monospace;text-align:right;color:#5B6373;white-space:nowrap;}
+table.pr-table td.pr-green{color:#3E9C63;font-weight:700;}
+table.pr-table tr.pr-total td{border-top:1.2px solid #A9812B;border-bottom:none;padding-top:4px;}
+.pr-footer{margin-top:8px;padding-top:5px;border-top:0.5px solid #D9D1BE;font-family:'IBM Plex Mono',monospace;font-size:6.5px;color:#8A8F9C;}
+
+@media print{
+  body *{visibility:hidden;}
+  .rg-modal.open, .rg-modal.open *{visibility:visible;}
+  .rg-modal.open{position:absolute;top:0;left:0;width:100%;height:auto;background:none;padding:0;display:block;overflow:visible;}
+  .rg-modal-inner{box-shadow:none;border-radius:0;max-width:none;}
+  .no-print{display:none !important;}
+  .pr-sheet{max-height:none;overflow:visible;padding:0;}
+  @page{ size:letter; margin:12mm; }
+}
+</style>
+</head>
+<body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+<header class="top">
+  <div class="wrap">
+    <p class="eyebrow">Municipalidad de Totonicapán · Clasificación institucional 12100801</p>
+    <h1>Panel de Ejecución Presupuestaria</h1>
+    <div class="meta-row">
+      <span>Corte mostrado <b id="metaPeriod">—</b></span>
+      <select id="periodSelect"></select>
+      <span><b id="metaCount">0</b> cortes registrados</span>
+      <button id="btnRefresh" type="button" title="Volver a leer los datos de Supabase, sin recargar la página" style="margin-left:auto;padding:5px 12px;border-radius:6px;border:1px solid #4a5578;background:transparent;color:#F1EAD3;cursor:pointer;font-size:13px;">↻ Actualizar</button>
+    </div>
+    <div class="view-tabs">
+      <button class="view-tab active" data-view="resumen">Resumen por programa</button>
+      <button class="view-tab" data-view="obras">Obras y proyectos</button>
+      <button class="view-tab" data-view="explorar">Explorar programas</button>
+      <button class="view-tab" data-view="carga">Cargar información</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div id="configBanner" class="banner" style="border-color:var(--bad);background:var(--bad-bg);color:#6E241A;"></div>
+  <div id="syncBanner" class="banner" style="border-color:var(--good);background:var(--good-bg);color:var(--good);"></div>
+
+  <!-- ============ VISTA: RESUMEN POR PROGRAMA ============ -->
+  <div class="view-panel active" id="viewResumen">
+
+    <div class="hero">
+      <div class="seal">
+        <svg viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="92" fill="none" stroke="#E3DBC6" stroke-width="1.5" stroke-dasharray="1 4"/>
+          <circle cx="100" cy="100" r="80" fill="none" stroke="var(--rule)" stroke-width="10"/>
+          <circle id="sealArc" cx="100" cy="100" r="80" fill="none" stroke="var(--good)" stroke-width="10"
+                  stroke-linecap="round" transform="rotate(-90 100 100)"/>
+          <path id="sealTextPath" d="M 100,20 A 80,80 0 1,1 99.9,20" fill="none"/>
+          <text class="seal-ring-text"><textPath href="#sealTextPath" startOffset="2%">MUNICIPALIDAD DE TOTONICAPÁN · CONTROL DE EJECUCIÓN PRESUPUESTARIA ·</textPath></text>
+        </svg>
+        <div class="seal-center"><div class="seal-pct" id="sealPct">0%</div><div class="seal-label">Ejecutado</div></div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><div class="k">Presupuesto vigente</div><div class="v" id="statVigente">—</div></div>
+        <div class="stat"><div class="k">Devengado acumulado</div><div class="v" id="statDevengado">—</div></div>
+        <div class="stat"><div class="k">Pagado acumulado</div><div class="v" id="statPagado">—</div></div>
+        <div class="stat"><div class="k">Saldo disponible</div><div class="v saldo-disp" id="statSaldo">—</div></div>
+        <div class="stat"><div class="k">Obras sin iniciar</div><div class="v" id="statObrasPend">—</div></div>
+        <div class="stat"><div class="k">Monto sin ejecutar en obras</div><div class="v" id="statMontoPend">—</div></div>
+      </div>
+    </div>
+
+    <section class="block">
+      <div class="section-head"><span class="roman">I.</span><h2>Ejecución por programa</h2><span class="sub">ordenado por % ejecutado</span></div>
+      <div class="two-col">
+        <div class="card">
+          <h3>Devengado vs. presupuesto vigente por programa</h3>
+          <div class="chart-box"><canvas id="chartProgramas"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>Alertas</h3>
+          <div class="alert-list" id="alertList"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="section-head"><span class="roman">II.</span><h2>Detalle por programa</h2><span class="cnt" id="progTableCount"></span></div>
+      <div class="table-scroll">
+        <table class="data" id="progTable">
+          <thead><tr>
+            <th data-key="name">Programa</th>
+            <th data-key="vigente">Vigente<span class="th-sub">presupuesto total autorizado</span></th>
+            <th data-key="devengado">Devengado<span class="th-sub">ya ejecutado / gastado</span></th>
+            <th data-key="pct">% ejecutado</th>
+            <th data-key="saldo">Saldo disponible<span class="th-sub">todavía sin comprometer</span></th>
+            <th data-key="saldoPorDevengar">Saldo por devengar<span class="th-sub">comprometido, falta ejecutar</span></th>
+            <th data-key="pendientes">Obras pendientes<span class="th-sub">sin ningún gasto todavía</span></th>
+          </tr></thead>
+          <tbody id="progTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ VISTA: OBRAS Y PROYECTOS ============ -->
+  <div class="view-panel" id="viewObras">
+
+    <div class="stat-band" id="statBand"></div>
+
+    <section class="block">
+      <div class="section-head"><span class="roman">I.</span><h2>Obras sin devengar (0% de avance)</h2><span class="cnt" id="pendCount"></span></div>
+      <div class="table-scroll">
+        <table class="pend" id="pendTable">
+          <thead><tr><th>Obra</th><th>Programa</th>
+            <th class="num">Vigente<span class="th-sub">presupuesto total</span></th>
+            <th class="num">Saldo disponible<span class="th-sub">sin comprometer</span></th>
+            <th class="num">Saldo por devengar<span class="th-sub">comprometido, falta ejecutar</span></th>
+          </tr></thead>
+          <tbody id="pendBody"></tbody>
+        </table>
+      </div>
+      <p class="legend-note">Ordenado de mayor a menor presupuesto vigente. Excluye buckets genéricos ("sin actividad", "sin obra").</p>
+    </section>
+  </div>
+
+  <!-- ============ VISTA: EXPLORAR PROGRAMAS ============ -->
+  <div class="view-panel" id="viewExplorar">
+    <section class="block">
+      <div class="section-head"><span class="roman">I.</span><h2>Explorar por programa</h2><span class="cnt" id="progCount"></span></div>
+      <div class="controls">
+        <input type="text" id="searchBox" placeholder="Buscar obra, proyecto o programa…">
+        <span class="chip active" data-filter="todos">Todos</span>
+        <span class="chip" data-filter="pendiente_sin_iniciar">Pendientes</span>
+        <span class="chip" data-filter="en_ejecucion">En ejecución</span>
+        <span class="chip" data-filter="completado">Completados</span>
+      </div>
+      <div class="tree-legend">
+        <span>Obra</span>
+        <span>Vigente<span class="th-sub">presupuesto total</span></span>
+        <span>Devengado<span class="th-sub">ya ejecutado</span></span>
+        <span>Saldo disponible<span class="th-sub">sin comprometer</span></span>
+        <span>Saldo por devengar<span class="th-sub">comprometido, falta ejecutar</span></span>
+        <span>Estado</span>
+      </div>
+      <div class="tree" id="tree"></div>
+    </section>
+  </div>
+
+  <!-- ============ VISTA: CARGAR INFORMACIÓN ============ -->
+  <div class="view-panel" id="viewCarga">
+  <section class="block">
+    <div class="section-head"><span class="roman">I.</span><h2>Registrar corte semanal</h2></div>
+    <p class="help-text">
+      Cada semana, súbele a Claude el nuevo reporte "Ejecución de Egresos Consolidado" en PDF y pídele:
+      <code>genera el JSON jerárquico de obras (Programa &gt; Subprograma &gt; Proyecto &gt; Actividad &gt; Obra) para el dashboard</code>.
+      Un solo bloque de datos alimenta las vistas "Resumen por programa", "Obras y proyectos" y "Explorar programas" (el resumen se calcula
+      automáticamente sumando las obras). Al guardar, el corte queda visible para todo el equipo de inmediato. Guardar
+      un corte con la misma fecha reemplaza por completo los datos de ese corte.
+    </p>
+
+    <div class="manual-date" style="margin-bottom:18px;">
+      <label for="memberName">Tu nombre (queda registrado con cada corte)</label>
+      <input type="text" id="memberName" placeholder="Ej. Luis Herrera" style="font-family:var(--sans);padding:8px 10px;border:1px solid var(--rule);border-radius:6px;min-width:220px;">
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tabAuto">Pegar texto / subir TXT (automático)</button>
+      <button class="tab-btn" data-tab="tabXlsx">Subir Excel de SICOIN GL</button>
+      <button class="tab-btn" data-tab="tabJson">Pegar JSON (vía Claude)</button>
+    </div>
+
+    <div class="tab-panel" id="tabXlsx">
+      <p class="help-text">
+        Subí directamente el archivo <b>.xls</b> que descargás desde SICOIN GL (formato "Excel" en el reporte
+        "Ejecución de Egresos del Ejercicio", con "Todos los Programas"). Se procesa en tu propio navegador —
+        no se sube a ningún servidor externo — y arma el corte automáticamente a partir de los renglones individuales.
+      </p>
+      <input type="file" id="xlsxFileInput" accept=".xls,.xlsx" style="margin-bottom:10px;font-family:var(--sans);font-size:12.5px;">
+      <div class="status-msg" id="xlsxStatus"></div>
+      <div id="xlsxPreview" style="display:none;margin-top:14px;">
+        <div class="table-scroll" style="margin-bottom:10px;">
+          <table class="pend" id="xlsxDiffTable">
+            <thead><tr><th>Campo</th><th class="num">Calculado</th><th class="num">Oficial (reporte)</th><th class="num">Diferencia</th></tr></thead>
+            <tbody id="xlsxDiffBody"></tbody>
+          </table>
+        </div>
+        <div class="row-actions">
+          <button class="btn" id="btnSaveXlsx">Guardar este corte</button>
+          <button class="btn secondary" id="btnClearXlsx">Limpiar</button>
+          <span id="xlsxMeta" style="font-family:var(--mono);font-size:11.5px;color:var(--text-soft);"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel active" id="tabAuto">
+      <p class="help-text">
+        Copia y pega aquí el texto completo del reporte "Ejecución de Egresos Consolidado" (o sube el archivo .txt),
+        y el dashboard genera el corte automáticamente — sin pasar por Claude. Antes de guardar, se compara el total
+        calculado contra la línea "TOTAL :" que trae el propio reporte; si no coincide exacto, se avisa en vez de
+        guardar datos incorrectos. Los nombres de obra se muestran tal cual vienen en el reporte (pueden incluir texto
+        de ubicación repetido).
+      </p>
+      <input type="file" id="fileInput" accept=".txt,text/plain" style="margin-bottom:10px;font-family:var(--sans);font-size:12.5px;">
+      <textarea class="json-in" id="rawTextInput" placeholder="Pega aquí el texto completo del reporte SICOIN GL…" style="min-height:160px;"></textarea>
+      <div class="row-actions">
+        <button class="btn" id="btnAnalyze">Analizar</button>
+        <button class="btn secondary" id="btnClearAuto">Limpiar</button>
+      </div>
+      <div class="status-msg" id="autoStatus"></div>
+      <div id="autoPreview" style="display:none;margin-top:14px;">
+        <div class="table-scroll" style="margin-bottom:10px;">
+          <table class="pend" id="autoDiffTable">
+            <thead><tr><th>Campo</th><th class="num">Calculado</th><th class="num">Oficial (reporte)</th><th class="num">Diferencia</th></tr></thead>
+            <tbody id="autoDiffBody"></tbody>
+          </table>
+        </div>
+        <div class="row-actions">
+          <button class="btn" id="btnSaveAuto">Guardar este corte</button>
+          <span id="autoMeta" style="font-family:var(--mono);font-size:11.5px;color:var(--text-soft);"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tabJson">
+      <p class="help-text">
+        Alternativa: súbele a Claude el reporte en PDF y pídele:
+        <code>genera el JSON jerárquico de obras (Programa &gt; Subprograma &gt; Proyecto &gt; Actividad &gt; Obra) para el dashboard</code>,
+        y pega aquí el bloque de datos que te devuelva.
+      </p>
+      <textarea class="json-in" id="jsonInput" placeholder='{"periodStart":"2026-01-01","periodEnd":"2026-07-29","programas":[{"codigo":"01","nombre":"ACTIVIDADES CENTRALES","subprogramas":[{"codigo":"00","nombre":"SIN SUBPROGRAMA","proyectos":[{"codigo":"000","nombre":"SIN PROYECTO","obras":[{"codigo":"001","nombre":"CONCEJO MUNICIPAL","asignado":0,"modificado":0,"vigente":0,"preCompromiso":0,"compromiso":0,"devengado":0,"pagado":0,"saldoDisponible":0,"saldoPorDevengar":0,"saldoPorPagar":0}]}]}]}]}'></textarea>
+      <div class="row-actions">
+        <button class="btn" id="btnAddJson">Guardar corte</button>
+        <button class="btn secondary" id="btnClearJson">Limpiar</button>
+      </div>
+      <div class="status-msg" id="jsonStatus"></div>
+    </div>
+
+    <div class="snap-list">
+      <h3 style="margin-bottom:8px;font-family:var(--serif);font-size:15px;color:var(--ink);">Cortes registrados</h3>
+      <div id="snapListBody"></div>
+    </div>
+  </section>
+  </div>
+
+</div>
+
+<footer class="foot">
+  <span>Fuente: SICOIN GL — Ejecución de Egresos Consolidado del Ejercicio · Datos compartidos vía Supabase, visibles para todo el equipo</span>
+  <button class="btn secondary" id="btnExport">Exportar datos (JSON)</button>
+</footer>
+
+<div id="renglonModal" class="rg-modal">
+  <div class="rg-modal-inner">
+    <div class="rg-modal-toolbar no-print">
+      <span class="rg-modal-title">Vista previa</span>
+      <div class="rg-modal-actions">
+        <button type="button" id="rgClose" class="rg-btn rg-btn-secondary">✕ Cerrar</button>
+        <button type="button" id="rgDownload" class="rg-btn rg-btn-primary">⬇ Descargar PDF</button>
+      </div>
+    </div>
+    <div id="printArea" class="pr-sheet"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+  /* ============ Supabase configuration ============ */
+  var SUPABASE_URL = "https://xfmgfvvtnbblvjtkbaam.supabase.co";
+  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhmbWdmdnZ0bmJibHZqdGtiYWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNDEzNTEsImV4cCI6MjEwMDkxNzM1MX0.ykB8lTNOVI98CZqZGuGilE6tJmIq-4A7EJ-m1fH9de4";
+  var TABLE = "budget_obras_snapshots";
+
+  var FIELD_MAP = {
+    asignado:"asignado", modificado:"modificado", vigente:"vigente", preCompromiso:"pre_compromiso",
+    compromiso:"compromiso", devengado:"devengado", pagado:"pagado", saldoDisponible:"saldo_disponible",
+    saldoPorDevengar:"saldo_por_devengar", saldoPorPagar:"saldo_por_pagar"
+  };
+  var FIELD_KEYS_CAMEL = Object.keys(FIELD_MAP);
+  var FIELDS = ["asignado","modificado","vigente","preCompromiso","compromiso","devengado","pagado","saldoDisponible","saldoPorDevengar","saldoPorPagar"];
+
+  var isConfigured = /^https:\/\/.+\.supabase\.co/.test(SUPABASE_URL) && SUPABASE_ANON_KEY.length > 20;
+  var supabaseClient = (isConfigured && window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+  var state = { snapshots: [], selectedPeriod: null, filter:'todos', q:'', view:'resumen', sortKey:'pct', sortDir:'desc' };
+  window.__printRegistry = [];
+
+  function setConfigBanner(msg){
+    var el = document.getElementById('configBanner');
+    if(msg){ el.innerHTML = msg; el.classList.add('show'); } else { el.classList.remove('show'); }
+  }
+  function flashSyncBanner(msg){
+    var el = document.getElementById('syncBanner');
+    el.textContent = msg; el.classList.add('show');
+    setTimeout(function(){ el.classList.remove('show'); }, 6000);
+  }
+
+  /* ============ Format helpers ============ */
+  function fmtQ(n){
+    if(n===undefined||n===null||isNaN(n)) n=0;
+    var sign = n<0?"-":"";
+    return sign + "Q " + Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+  }
+  function fmtCompact(n){
+    if(n===undefined||n===null||isNaN(n)) n=0;
+    var abs=Math.abs(n), sign=n<0?"-":"";
+    if(abs>=1000000) return sign+"Q "+(abs/1000000).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})+"M";
+    if(abs>=1000) return sign+"Q "+(abs/1000).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})+"K";
+    return fmtQ(n);
+  }
+  function fmtPct(n){ return (n||0).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})+"%"; }
+  function fmtDate(iso){
+    if(!iso) return "—";
+    var d = new Date(iso+"T00:00:00");
+    if(isNaN(d)) return iso;
+    var meses=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+    return d.getDate()+" "+meses[d.getMonth()]+" "+d.getFullYear();
+  }
+  function fmtTime(isoTimestamp){
+    if(!isoTimestamp) return null;
+    var d = new Date(isoTimestamp);
+    if(isNaN(d)) return null;
+    var h = d.getHours(), m = d.getMinutes();
+    var ampm = h>=12 ? 'p.m.' : 'a.m.';
+    var h12 = h%12; if(h12===0) h12=12;
+    return h12+':'+(m<10?'0':'')+m+' '+ampm;
+  }
+  function esc(s){ return (s||"").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function parseRenglonesField(v){
+    if(Array.isArray(v)) return v;
+    if(typeof v === 'string' && v.trim()){
+      try{ var parsed = JSON.parse(v); return Array.isArray(parsed) ? parsed : []; }
+      catch(e){ console.error('No se pudo leer renglones (JSON inválido):', e); return []; }
+    }
+    return [];
+  }
+  function estadoDe(vigente, devengado){
+    if(vigente===0) return "sin_asignacion";
+    if(devengado===0) return "pendiente_sin_iniciar";
+    if(devengado >= vigente*0.995) return "completado";
+    return "en_ejecucion";
+  }
+  function tier(pct){
+    if(pct<0.30) return {c:"var(--bad)",cls:"bad",label:"Crítico"};
+    if(pct<0.60) return {c:"var(--warn)",cls:"warn",label:"En proceso"};
+    return {c:"var(--good)",cls:"good",label:"Saludable"};
+  }
+  function tagFor(estado){
+    var map = {
+      pendiente_sin_iniciar: ['bad','Pendiente'], en_ejecucion: ['warn','En ejecución'],
+      completado: ['good','Completado'], sin_asignacion: ['neutral','Sin asignación']
+    };
+    var m = map[estado] || ['neutral', estado];
+    return '<span class="tag '+m[0]+'">'+m[1]+'</span>';
+  }
+
+  /* ============ Parser: texto crudo SICOIN GL -> JSON jerarquico ============ */
+  /* (Sin dependencias externas, corre 100% en el navegador) */
+  // ============================================================
+  // Parser: texto crudo del reporte SICOIN GL -> JSON jerarquico
+  // (Programa > Subprograma > Proyecto > [Actividad...] > Obra)
+  //
+  // Estrategia: en vez de adivinar reglas fijas de anidamiento,
+  // cada fila numerica se prueba como "contenedor": si su total
+  // coincide EXACTO con la suma de un tramo contiguo de filas
+  // siguientes, esas filas son sus hijas (y la fila contenedora
+  // se descarta para no contar doble). Si no hay coincidencia,
+  // la fila es una hoja (obra real).
+  // ============================================================
+  "use strict";
+
+  const PROGRAMAS = [
+    ["01","ACTIVIDADES CENTRALES"],
+    ["12","ACCESO AL AGUA POTABLE Y SANEAMIENTO BÁSICO"],
+    ["13","PREVENCIÓN DE LA MORTALIDAD DE LA NIÑEZ"],
+    ["14","GESTIÓN DE LA EDUCACIÓN LOCAL DE CALIDAD"],
+    ["17","SEGURIDAD INTEGRAL"],
+    ["18","AMBIENTE Y RECURSOS NATURALES"],
+    ["19","MOVILIDAD URBANA Y ESPACIOS PÚBLICOS"],
+    ["20","PROTECCIÓN SOCIAL"],
+    ["29","RECUPERACIÓN DE LA SALUD"],
+    ["31","FOMENTO AL DEPORTE NO FEDERADO Y A LA RECREACIÓN"],
+    ["32","DESARROLLO DE LA INFRAESTRUCTURA VIAL"],
+    ["33","GESTIÓN DEL DESARROLLO CULTURAL"],
+    ["99","PARTIDAS NO ASIGNABLES A PROGRAMAS"]
+  ];
+  const PROGRAMA_CODES = new Set(PROGRAMAS.map(p=>p[0]));
+
+  const NUM_RE = /-?[\d,]+\.\d{2}/g;
+  const RENGLON_CODE_RE = /\b\d{2}-\d{4}-\d{4}\b/;
+  const TOL = 0.03;
+
+  function toNum(s){ return parseFloat(s.replace(/,/g,'')); }
+
+  function extractOfficialTotal(rawText){
+    const m = rawText.match(/TOTAL\s*:[^\n]*\n?/i);
+    if(!m) return null;
+    const idx = rawText.indexOf(m[0]);
+    const window = rawText.slice(idx, idx + 400);
+    let nums = (window.match(NUM_RE)||[]).map(toNum);
+    if(nums.length < 10) return null;
+    if(nums.length === 11){
+      // known layout: asig,mod,vig,preComp,comp,dev,pagado,[EXTRA PRESUPUESTARIO],saldoDisp,saldoPorDev,saldoPorPagar
+      nums = nums.slice(0,7).concat(nums.slice(8,11));
+    } else if(nums.length > 10){
+      nums = nums.slice(0,10);
+    }
+    const t = {};
+    FIELDS.forEach((f,i)=> t[f] = nums[i]);
+    return t;
+  }
+
+  function buildLogicalRows(rawText){
+    const allLines = rawText.split(/\r?\n/);
+    let startIdx = 0;
+    for(let i=0;i<allLines.length;i++){
+      if(allLines[i].trim() === 'Renglon'){ startIdx = i+1; break; }
+    }
+    const lines = allLines.slice(startIdx);
+    const rows = [];
+    let buffer = [];
+    for(const line of lines){
+      const nums = line.match(NUM_RE);
+      if(nums && nums.length >= 2){
+        buffer.push(line);
+        const joined = buffer.join(' ');
+        const codeMatch = joined.match(/^\s*(\S+)/);
+        const leadCode = codeMatch ? codeMatch[1] : '';
+        let nameText = joined;
+        if(codeMatch) nameText = nameText.slice(codeMatch[0].length);
+        nameText = nameText.replace(NUM_RE, ' ').replace(/\s+/g,' ').trim();
+        rows.push({ raw: joined, leadCode, name: nameText, numbers: nums.map(toNum),
+          isRenglon: RENGLON_CODE_RE.test(joined), _idx: rows.length });
+        buffer = [];
+      } else if(line.trim()===''){
+        // ignore
+      } else {
+        buffer.push(line);
+      }
+    }
+    return rows; // NOTE: renglon rows are kept here (not filtered) so we can
+                 // attach them to their parent obra later via attachRenglones().
+  }
+
+  function last10(numbers){
+    if(numbers.length === 10) return numbers;
+    // Renglon rows (and the report's own TOTAL line) carry an 11th hidden
+    // "EXTRA PRESUPUESTARIO" field sitting between Pagado and Saldo
+    // Disponible; drop that one specifically rather than chopping from
+    // either end, or every value after it would shift by one position.
+    if(numbers.length === 11) return numbers.slice(0,7).concat(numbers.slice(8,11));
+    // Filas de nivel superior (Programa/Subprograma/Proyecto/Actividad/Obra)
+    // a veces solo traen 7 valores (falta Asignado/Modificado/Vigente) — se
+    // rellenan esos 3 con 0; el Vigente real de cada obra se recalcula
+    // después sumando sus renglones, que sí traen el dato completo.
+    if(numbers.length === 7) return [0,0,0].concat(numbers);
+    if(numbers.length > 10) return numbers.slice(numbers.length-10);
+    return null;
+  }
+  function isGrupoGastoSubtotal(row){
+    return row.name === '' || /^[\d.,\-]+$/.test(row.name);
+  }
+  function makeVals(numbers){
+    const v = {}; FIELDS.forEach((f,i)=> v[f]=numbers[i]); return v;
+  }
+  function sumFields(list){
+    const t = {}; FIELDS.forEach(f=> t[f]=0);
+    list.forEach(o => FIELDS.forEach(f => t[f] += (o[f]||0)));
+    FIELDS.forEach(f => t[f] = Math.round(t[f]*100)/100);
+    return t;
+  }
+  function totalsMatch(a,b){
+    for(const f of FIELDS){ if(Math.abs(a[f]-b[f]) > TOL) return false; }
+    return true;
+  }
+
+  // Bottom-up fixed-point reduction: repeatedly scan for any item whose total
+  // equals the sum of a contiguous run of following items, and collapse that
+  // run into it as children. Restart after each collapse (simple & safe for
+  // the row counts involved here). Converges because each collapse strictly
+  // shrinks the list.
+  const WRAPPER_NAME_RE = /^SIN\s+(ACTIVIDAD|OBRA|PROYECTO)\b/i;
+
+  function reduceToContainers(items){
+    let guard = 0;
+    // Phase A: collapse only unambiguous window=1 "SIN OBRA/ACTIVIDAD" wrappers,
+    // repeatedly, until none remain. These are textually unambiguous, so no risk
+    // of coincidental false matches even when many items share the same value.
+    let changedA = true;
+    while(changedA && guard < 4000){
+      changedA = false;
+      for(let i=0; i+1<items.length; i++){
+        const base = items[i], child = items[i+1];
+        if(WRAPPER_NAME_RE.test(child.nombre) && totalsMatch(child.vals, base.vals)){
+          items.splice(i, 2, { codigo: base.codigo, nombre: base.nombre, vals: base.vals, children: [child] });
+          changedA = true; guard++;
+          break;
+        }
+      }
+    }
+    // Phase B: now look for larger contiguous runs whose sum matches a preceding
+    // base row (proyecto-level aggregation of several already-cleaned children,
+    // e.g. "000 SIN PROYECTO" wrapping many named offices, or a named proyecto
+    // wrapping a couple of named obras). Smallest window first, scanned left to
+    // right, restart after each collapse.
+    // Phase A2: for a base row that is ITSELF literally named "SIN
+    // ACTIVIDAD/OBRA/PROYECTO", search ALL window sizes (small to large) and
+    // fully expand it before any other matching happens. This prevents a
+    // later real-named container (Phase B) from accidentally swallowing this
+    // wrapper whole (as an opaque leaf) before it gets a chance to expand into
+    // its true children.
+    const MAX_WINDOW = 150;
+    let changedA2 = true;
+    while(changedA2 && guard < 6000){
+      changedA2 = false;
+      for(let i=0; i<items.length; i++){
+        const base = items[i];
+        if(!WRAPPER_NAME_RE.test(base.nombre)) continue;
+        let matched = false;
+        for(let w=1; w<=MAX_WINDOW && i+w<items.length; w++){
+          const acc = items.slice(i+1, i+1+w);
+          const sum = sumFields(acc.map(x=>x.vals));
+          if(totalsMatch(sum, base.vals)){
+            items.splice(i, w+1, { codigo: base.codigo, nombre: base.nombre, vals: base.vals, children: acc.slice() });
+            changedA2 = true; matched = true; guard++;
+            break;
+          }
+        }
+        if(matched) break;
+      }
+    }
+    // Phase B: now look for contiguous runs whose sum matches a preceding base
+    // row. Window=1 real-named matches are allowed too (a proyecto that wraps
+    // exactly one differently-named obra), but only when the child's code is a
+    // nesting-restart marker ('000'/'001') -- this avoids false positives among
+    // flat sibling lists that happen to share identical values (e.g. many
+    // untouched Q1,500 items), since a true nested child restarts numbering
+    // while a true sibling continues the incrementing sequence.
+    outer:
+    while(guard < 8000){
+      for(let w=1; w<=MAX_WINDOW; w++){
+        for(let i=0; i+w<items.length; i++){
+          const base = items[i];
+          const acc = items.slice(i+1, i+1+w);
+          if(w===1 && !/^(000|001)$/.test(acc[0].codigo)) continue;
+          const sum = sumFields(acc.map(x=>x.vals));
+          if(totalsMatch(sum, base.vals)){
+            items.splice(i, w+1, { codigo: base.codigo, nombre: base.nombre, vals: base.vals, children: acc.slice() });
+            guard++;
+            continue outer;
+          }
+        }
+      }
+      break;
+    }
+    return items;
+  }
+
+  function toLeafOrNode(item){
+    return { codigo:item.codigo, nombre:item.nombre, _idx:item._idx, ...item.vals };
+  }
+
+  // When a proyecto/actividad has a real descriptive name but its ONLY
+  // child obra ended up with a generic placeholder name ("SIN OBRA" /
+  // "SIN ACTIVIDAD"), the specific name is more useful to show and search
+  // by at the obra level than at the parent level. Rename the obra to
+  // inherit it (keeps the obra's own code, just borrows the name).
+  function inheritNameIfGenericSingleLeaf(parentNombre, obras){
+    if(obras.length === 1 && WRAPPER_NAME_RE.test(obras[0].nombre) && !WRAPPER_NAME_RE.test(parentNombre)){
+      obras[0] = Object.assign({}, obras[0], { nombre: parentNombre });
+    }
+    return obras;
+  }
+
+  function toProyectoShape(items){
+    const hasContainerChildren = items.some(n=>n.children);
+    if(!hasContainerChildren){
+      return { obras: items.map(toLeafOrNode) };
+    }
+    const actividades = [];
+    const flatObras = [];
+    items.forEach(n=>{
+      if(n.children){
+        const leafObras = inheritNameIfGenericSingleLeaf(n.nombre, flattenLeaves(n.children));
+        actividades.push({ codigo:n.codigo, nombre:n.nombre, obras:leafObras });
+      } else {
+        flatObras.push(toLeafOrNode(n));
+      }
+    });
+    if(flatObras.length && actividades.length){
+      actividades.push({ codigo:'000', nombre:'SIN ACTIVIDAD', obras: flatObras });
+    }
+    if(actividades.length) return { actividades };
+    return { obras: flatObras };
+  }
+  function flattenLeaves(nodes){
+    let out = [];
+    nodes.forEach(n=>{
+      if(n.children) out = out.concat(flattenLeaves(n.children));
+      else out.push(toLeafOrNode(n));
+    });
+    return out;
+  }
+
+  function extractPeriod(rawText){
+    const m = rawText.match(/Periodo del:\s*([\d\/]+)\s*al:\s*([\d\/]+)/i);
+    if(!m) return null;
+    function toISO(ddmmyyyy){
+      const parts = ddmmyyyy.split('/');
+      if(parts.length!==3) return null;
+      return parts[2]+'-'+parts[1].padStart(2,'0')+'-'+parts[0].padStart(2,'0');
+    }
+    return { periodStart: toISO(m[1]), periodEnd: toISO(m[2]) };
+  }
+
+  // Walks forward from each leaf obra's original row position, collecting the
+  // "Grupo de Gasto" (000/100/200/300/400) and Renglon detail rows that follow
+  // it in the raw document, until the next structural (non-detail) row.
+  const GRUPO_GASTO_RE = /^(000|100|200|300|400)$/;
+  function attachRenglones(allRows, programas){
+    function collectFor(obra){
+      obra.renglones = [];
+      if(obra._idx == null || !allRows[obra._idx]) { delete obra._idx; return; }
+      let currentGrupo = null;
+      for(let j = obra._idx + 1; j < allRows.length; j++){
+        const r = allRows[j];
+        if(isGrupoGastoSubtotal(r)){
+          if(GRUPO_GASTO_RE.test(r.leadCode)){ currentGrupo = r.leadCode; continue; }
+          break;
+        }
+        if(r.isRenglon && r._vals){
+          const m = r.name.match(/^(\d{2}-\d{4}-\d{4})\s*(.*)$/);
+          obra.renglones.push({
+            codigo: r.leadCode,
+            clasificador: m ? m[1] : '',
+            nombre: m ? m[2] : r.name,
+            grupoGasto: currentGrupo,
+            asignado: r._vals[0], modificado: r._vals[1], vigente: r._vals[2],
+            preCompromiso: r._vals[3], compromiso: r._vals[4], devengado: r._vals[5],
+            pagado: r._vals[6], saldoDisponible: r._vals[7], saldoPorDevengar: r._vals[8], saldoPorPagar: r._vals[9]
+          });
+          continue;
+        }
+        break;
+      }
+      delete obra._idx;
+    }
+    programas.forEach(pg=>{
+      pg.subprogramas.forEach(sp=>{
+        sp.proyectos.forEach(py=>{
+          if(py.actividades) py.actividades.forEach(a=> a.obras.forEach(collectFor));
+          if(py.obras) py.obras.forEach(collectFor);
+        });
+      });
+    });
+  }
+
+  function parseRawReport(rawText){
+    const warnings = [];
+    const officialTotal = extractOfficialTotal(rawText);
+    const allRows = buildLogicalRows(rawText);
+    allRows.forEach(r => { r._vals = last10(r.numbers); });
+    let rows = allRows.filter(r => r._vals && !isGrupoGastoSubtotal(r) && !r.isRenglon);
+
+    const progBoundaries = [];
+    rows.forEach((row,idx)=>{
+      if(/^\d{2}$/.test(row.leadCode) && PROGRAMA_CODES.has(row.leadCode)){
+        const known = PROGRAMAS.find(p=>p[0]===row.leadCode);
+        if(known && row.name.toUpperCase().indexOf(known[1].slice(0,10).toUpperCase()) !== -1){
+          progBoundaries.push(idx);
+        }
+      }
+    });
+
+    const programas = [];
+    for(let b=0; b<progBoundaries.length; b++){
+      const start = progBoundaries[b];
+      const end = (b+1<progBoundaries.length) ? progBoundaries[b+1] : rows.length;
+      const progRow = rows[start];
+      const known = PROGRAMAS.find(p=>p[0]===progRow.leadCode);
+      const programa = { codigo: progRow.leadCode, nombre: known[1], subprogramas: [] };
+
+      const body = rows.slice(start+1, end);
+      const subBoundaries = [];
+      body.forEach((row,idx)=>{ if(/^\d{2}$/.test(row.leadCode)) subBoundaries.push(idx); });
+
+      if(subBoundaries.length === 0){
+        warnings.push('Programa '+progRow.leadCode+': no se encontraron subprogramas.');
+        continue;
+      }
+      for(let s=0; s<subBoundaries.length; s++){
+        const sStart = subBoundaries[s];
+        const sEnd = (s+1<subBoundaries.length) ? subBoundaries[s+1] : body.length;
+        const subRow = body[sStart];
+        const sub = { codigo: subRow.leadCode, nombre: subRow.name || 'SIN SUBPROGRAMA', proyectos: [] };
+        const subBody = body.slice(sStart+1, sEnd).filter(r=>/^\d{3}$/.test(r.leadCode));
+        const items = subBody.map(r => ({ codigo:r.leadCode, nombre:r.name, vals: makeVals(r._vals), _idx: r._idx }));
+        const topNodes = reduceToContainers(items);
+        topNodes.forEach(n=>{
+          if(n.children){
+            const shape = toProyectoShape(n.children);
+            if(shape.obras) shape.obras = inheritNameIfGenericSingleLeaf(n.nombre, shape.obras);
+            sub.proyectos.push({ codigo:n.codigo, nombre:n.nombre, ...shape });
+          } else {
+            sub.proyectos.push({ codigo:n.codigo, nombre:n.nombre, obras:[toLeafOrNode(n)] });
+          }
+        });
+        programa.subprogramas.push(sub);
+      }
+      programas.push(programa);
+    }
+
+    function estadoDe(vig,dev){
+      if(vig===0) return 'sin_asignacion';
+      if(dev===0) return 'pendiente_sin_iniciar';
+      if(dev >= vig*0.995) return 'completado';
+      return 'en_ejecucion';
+    }
+    function recomputeObra(o){
+      o.estado = estadoDe(o.vigente, o.devengado);
+      o.pctEjecucion = o.vigente ? Math.round((o.devengado/o.vigente*10000))/100 : 0;
+    }
+    programas.forEach(pg=>{
+      pg.subprogramas.forEach(sp=>{
+        sp.proyectos.forEach(py=>{
+          let all = [];
+          if(py.actividades){ py.actividades.forEach(a=>{ a.obras.forEach(recomputeObra); const t=sumFields(a.obras); FIELDS.forEach(f=>a[f]=t[f]); all=all.concat(a.obras); }); }
+          if(py.obras){ py.obras.forEach(recomputeObra); all = all.concat(py.obras); }
+          const t = sumFields(all); FIELDS.forEach(f=> py[f]=t[f]);
+        });
+        const t = sumFields(sp.proyectos); FIELDS.forEach(f=> sp[f]=t[f]);
+      });
+      const t = sumFields(pg.subprogramas); FIELDS.forEach(f=> pg[f]=t[f]);
+      pg.pctEjecucion = pg.vigente ? Math.round((pg.devengado/pg.vigente*10000))/100 : 0;
+    });
+
+    attachRenglones(allRows, programas);
+
+    // Las filas de Obra a veces no traen Asignado/Modificado/Vigente propios
+    // (ver last10) — se recalculan sumando los renglones ya adjuntados,
+    // que sí traen el dato completo, igual que en el importador de Excel.
+    function recomputeFromRenglones(o){
+      if(!o.renglones || !o.renglones.length) return;
+      const t = sumFields(o.renglones);
+      FIELDS.forEach(f=>{ o[f]=t[f]; });
+      o.estado = estadoDe(o.vigente, o.devengado);
+      o.pctEjecucion = o.vigente ? Math.round((o.devengado/o.vigente*10000))/100 : 0;
+    }
+    programas.forEach(pg=>{
+      pg.subprogramas.forEach(sp=>{
+        sp.proyectos.forEach(py=>{
+          if(py.actividades) py.actividades.forEach(a=>{
+            a.obras.forEach(recomputeFromRenglones);
+            const t=sumFields(a.obras); FIELDS.forEach(f=>a[f]=t[f]);
+          });
+          if(py.obras) py.obras.forEach(recomputeFromRenglones);
+          const all = (py.actividades ? py.actividades.reduce((acc,a)=>acc.concat(a.obras),[]) : []).concat(py.obras||[]);
+          const t = sumFields(all); FIELDS.forEach(f=> py[f]=t[f]);
+        });
+        const t = sumFields(sp.proyectos); FIELDS.forEach(f=> sp[f]=t[f]);
+      });
+      const t = sumFields(pg.subprogramas); FIELDS.forEach(f=> pg[f]=t[f]);
+      pg.pctEjecucion = pg.vigente ? Math.round((pg.devengado/pg.vigente*10000))/100 : 0;
+    });
+
+    const grandTotal = sumFields(programas);
+
+    const pendientes = [];
+    programas.forEach(pg=>{
+      pg.subprogramas.forEach(sp=>{
+        sp.proyectos.forEach(py=>{
+          function scan(list, actName){
+            list.forEach(o=>{
+              if(o.vigente>0 && o.devengado===0 && !/SIN (ACTIVIDAD|OBRA)/i.test(o.nombre)){
+                pendientes.push({programa:pg.codigo+' - '+pg.nombre, subprograma:sp.nombre, proyecto:py.nombre,
+                  actividad:actName||null, obra:o.codigo+' - '+o.nombre, vigente:o.vigente,
+                  saldoPorDevengar:o.saldoPorDevengar, saldoDisponible:o.saldoDisponible});
+              }
+            });
+          }
+          if(py.actividades) py.actividades.forEach(a=>scan(a.obras, a.nombre));
+          if(py.obras) scan(py.obras, null);
+        });
+      });
+    });
+    pendientes.sort((a,b)=>b.vigente-a.vigente);
+
+    let validation = { ok:null };
+    if(officialTotal){
+      const diffs = {}; let maxDiff = 0;
+      FIELDS.forEach(f=>{ const d = Math.round((grandTotal[f]-officialTotal[f])*100)/100; diffs[f]=d; maxDiff=Math.max(maxDiff,Math.abs(d)); });
+      validation = { ok: maxDiff < 5, diffs, maxDiff, officialTotal, computedTotal: grandTotal };
+    }
+
+    return { programas, obrasPendientesSinIniciar: pendientes, grandTotal, validation, warnings, period: extractPeriod(rawText) };
+  }
+
+  /* ============ Parser: Excel (.xls/.xlsx) de SICOIN GL -> mismo JSON jerarquico ============ */
+  // El reporte de SICOIN GL usa una columna distinta por cada nivel de la jerarquia
+  // (Programa, Subprograma, Proyecto, Actividad, Obra, Renglon) en vez de indentacion
+  // por texto. Las filas de subtotal (Programa/Subprograma/Proyecto/Actividad/Obra) no
+  // traen Vigente, así que los totales de cada obra se calculan sumando sus renglones,
+  // que sí traen el detalle completo.
+  function parseExcelSicoin(rows){
+    // El reporte de SICOIN GL usa una columna distinta por cada nivel de la
+    // jerarquia (Programa, Subprograma, Proyecto, Actividad, Obra, Renglon),
+    // pero esas columnas NO son fijas: cambian de posicion segun el ancho de
+    // los numeros de cada descarga (particularidad de como Crystal Reports
+    // exporta a Excel). Por eso el parser APRENDE las columnas de este
+    // archivo especifico (a partir de la primera secuencia completa
+    // Programa->Subprograma->Proyecto->Actividad->Obra) en vez de asumirlas
+    // fijas. Ademas, en algunos reportes Programa y Subprograma comparten la
+    // misma columna (ej. "00 SIN SUBPROGRAMA" alineado con su Programa) -
+    // para esos casos se usa el catalogo de nombres oficiales de programa
+    // (fijo a nivel nacional) para decidir si una fila es un Programa nuevo
+    // o el Subprograma del Programa actual.
+    function cell(row,i){ var v = row[i]; return (v===undefined||v===null) ? '' : v; }
+    function str(row,i){ var v=cell(row,i); return (typeof v==='string' ? v : String(v)).trim(); }
+    function num(row,i){
+      var v=cell(row,i);
+      if(v==='') return 0;
+      var n = typeof v==='number' ? v : parseFloat(String(v).replace(/,/g,''));
+      return isNaN(n) ? 0 : n;
+    }
+    function rowIsBlank(row){
+      for(var i=0;i<row.length;i++){ if(str(row,i)!=='') return false; }
+      return true;
+    }
+    function leftmostNonEmpty(row){
+      for(var i=0;i<row.length;i++){ if(str(row,i)!=='') return i; }
+      return -1;
+    }
+    function nextNonEmpty(row, after){
+      for(var i=after+1;i<row.length;i++){ if(str(row,i)!=='') return i; }
+      return -1;
+    }
+    function looksNumeric(txt){
+      if(txt==='') return true;
+      // OJO: no puede aceptar patrones tipo "21-0101-0001" (clasificador de
+      // renglón) — esos tienen guiones en medio, un número real no.
+      return /^-?[\d,]+(\.\d+)?$/.test(txt);
+    }
+
+    var CODE_RE = /^\d{2,3}$/;
+    var CLASSIF_RE = /^\d{2}-\d{4}-\d{4}$/;
+    // Catalogo nacional de programas municipales (SICOIN GL). Los nombres de
+    // Programa son estandarizados; se usan para distinguir un Programa nuevo
+    // de un Subprograma cuando ambos caen en la misma columna.
+    var KNOWN_PROGRAMAS = {
+      'ACTIVIDADES CENTRALES':1, 'ACCESO AL AGUA POTABLE Y SANEAMIENTO BÁSICO':1, 'PREVENCIÓN DE LA MORTALIDAD':1,
+      'GESTIÓN DE LA EDUCACIÓN LOCAL DE CALIDAD':1, 'SEGURIDAD INTEGRAL':1, 'AMBIENTE Y RECURSOS NATURALES':1,
+      'MOVILIDAD URBANA Y ESPACIOS PÚBLICOS':1, 'PROTECCIÓN SOCIAL':1, 'RECUPERACIÓN DE LA SALUD':1,
+      'FOMENTO AL DEPORTE NO FEDERADO Y A LA RECREACIÓN':1, 'DESARROLLO DE LA INFRAESTRUCTURA VIAL':1,
+      'GESTIÓN DEL DESARROLLO CULTURAL':1, 'PARTIDAS NO ASIGNABLES A PROGRAMAS':1
+    };
+
+    var programas = [];
+    var curProg=null, curSub=null, curProy=null, curAct=null, curObra=null;
+    var progCol=null, subpCol=null, proyCol=null, actCol=null, obraCol=null;
+    var bootPhase = 0; // 0=prog,1=subp,2=proy,3=act,4=obra,5=aprendido
+
+    function newObra(codigo,nombre){
+      return { codigo:codigo, nombre:nombre, renglones:[],
+        asignado:0, modificado:0, vigente:0, preCompromiso:0, compromiso:0, devengado:0,
+        pagado:0, saldoDisponible:0, saldoPorDevengar:0, saldoPorPagar:0 };
+    }
+
+    rows.forEach(function(row){
+      if(rowIsBlank(row)) return;
+      var codeCol = leftmostNonEmpty(row);
+      if(codeCol===-1) return;
+      var code = str(row, codeCol);
+      if(!CODE_RE.test(code)) return;
+      var col2 = nextNonEmpty(row, codeCol);
+      var val2 = col2!==-1 ? str(row, col2) : '';
+
+      // Fila "Grupo de Gasto" u otro subtotal intermedio: el código viene
+      // seguido directo de un número en vez de un nombre -> se ignora.
+      if(val2==='' || looksNumeric(val2)) return;
+
+      // Fila de renglón: el código va seguido de un clasificador presupuestario.
+      if(CLASSIF_RE.test(val2)){
+        if(!curObra) return;
+        var nameCol = nextNonEmpty(row, col2);
+        var nombreR = nameCol!==-1 ? str(row, nameCol) : '';
+        var renglon = { codigo:code, clasificador:val2, nombre:nombreR,
+          asignado:0, modificado:0, vigente:0, preCompromiso:0, compromiso:0, devengado:0,
+          pagado:0, saldoDisponible:0, saldoPorDevengar:0, saldoPorPagar:0 };
+        var nums = [];
+        for(var i=nameCol+1;i<row.length;i++){
+          var v = row[i];
+          if(v!==undefined && v!==null && v!==''){
+            var nn = typeof v==='number' ? v : parseFloat(String(v).replace(/,/g,''));
+            if(!isNaN(nn)) nums.push(nn);
+          }
+        }
+        var order10 = FIELDS; // 10 campos en orden
+        var order11 = ["asignado","modificado","vigente","preCompromiso","compromiso","devengado","pagado","_extra","saldoDisponible","saldoPorDevengar","saldoPorPagar"];
+        var order = nums.length===11 ? order11 : order10;
+        order.forEach(function(k, idx){ if(k!=='_extra' && nums[idx]!==undefined) renglon[k]=nums[idx]; });
+        curObra.renglones.push(renglon);
+        return;
+      }
+
+      // Fila de nivel jerárquico (Programa/Subprograma/Proyecto/Actividad/Obra)
+      var nombre = val2;
+
+      if(bootPhase===0){
+        progCol = codeCol;
+        curProg = { codigo:code, nombre:nombre, subprogramas:[] };
+        programas.push(curProg);
+        bootPhase = 1; return;
+      }
+      if(bootPhase===1){
+        subpCol = codeCol;
+        curSub = { codigo:code, nombre:nombre, proyectos:[] };
+        curProg.subprogramas.push(curSub);
+        bootPhase = 2; return;
+      }
+      if(bootPhase===2){
+        proyCol = codeCol;
+        curProy = { codigo:code, nombre:nombre };
+        curSub.proyectos.push(curProy);
+        bootPhase = 3; return;
+      }
+      if(bootPhase===3){
+        actCol = codeCol;
+        curAct = { codigo:code, nombre:nombre, obras:[] };
+        curProy.actividades = curProy.actividades || [];
+        curProy.actividades.push(curAct);
+        bootPhase = 4; return;
+      }
+      if(bootPhase===4){
+        obraCol = codeCol;
+        curObra = newObra(code, nombre);
+        curAct.obras.push(curObra);
+        bootPhase = 5; return;
+      }
+
+      // Columnas ya aprendidas: clasificar de más profundo a más superficial.
+      if(codeCol===obraCol && curAct){
+        curObra = newObra(code, nombre);
+        curAct.obras.push(curObra);
+      } else if(codeCol===actCol && curProy){
+        curAct = { codigo:code, nombre:nombre, obras:[] };
+        curProy.actividades = curProy.actividades || [];
+        curProy.actividades.push(curAct);
+        curObra = null;
+      } else if(codeCol===proyCol && curSub){
+        curProy = { codigo:code, nombre:nombre };
+        curSub.proyectos.push(curProy);
+        curAct = null; curObra = null;
+      } else if(codeCol===subpCol && subpCol!==progCol && curProg){
+        curSub = { codigo:code, nombre:nombre, proyectos:[] };
+        curProg.subprogramas.push(curSub);
+        curProy=null; curAct=null; curObra=null;
+      } else if(codeCol===progCol){
+        var isNewProgram;
+        if(subpCol===progCol){
+          // Columna ambigua entre Programa y Subprograma: usamos el catálogo
+          // de nombres oficiales de programa para decidir.
+          isNewProgram = !!KNOWN_PROGRAMAS[nombre.toUpperCase()];
+        } else {
+          isNewProgram = true;
+        }
+        if(isNewProgram){
+          curProg = { codigo:code, nombre:nombre, subprogramas:[] };
+          programas.push(curProg);
+          curSub=null; curProy=null; curAct=null; curObra=null;
+        } else {
+          curSub = { codigo:code, nombre:nombre, proyectos:[] };
+          if(curProg) curProg.subprogramas.push(curSub);
+          curProy=null; curAct=null; curObra=null;
+        }
+      }
+      // Filas que no calzan en ningún nivel conocido (ruido residual) se ignoran.
+    });
+
+    function sumRenglones(o){
+      var t = {}; FIELDS.forEach(function(f){ t[f]=0; });
+      o.renglones.forEach(function(r){ FIELDS.forEach(function(f){ t[f]+=(r[f]||0); }); });
+      FIELDS.forEach(function(f){ o[f]=Math.round(t[f]*100)/100; });
+    }
+    function estadoDe(vig,dev){
+      if(vig===0) return 'sin_asignacion';
+      if(dev===0) return 'pendiente_sin_iniciar';
+      if(dev >= vig*0.995) return 'completado';
+      return 'en_ejecucion';
+    }
+    function recomputeObra(o){
+      sumRenglones(o);
+      o.estado = estadoDe(o.vigente, o.devengado);
+      o.pctEjecucion = o.vigente ? Math.round((o.devengado/o.vigente*10000))/100 : 0;
+    }
+
+    programas.forEach(function(pg){
+      pg.subprogramas.forEach(function(sp){
+        sp.proyectos.forEach(function(py){
+          var all = [];
+          if(py.actividades){
+            py.actividades.forEach(function(a){
+              // Si una actividad trae una sola obra genérica ("SIN OBRA"), el
+              // nombre real del proyecto suele venir en el nombre de la
+              // Actividad — heredarlo, para que el buscador y las listas
+              // muestren el nombre real en vez de "SIN OBRA".
+              a.obras = inheritNameIfGenericSingleLeaf(a.nombre, a.obras);
+              a.obras.forEach(recomputeObra);
+              var t=sumFields(a.obras); FIELDS.forEach(function(f){ a[f]=t[f]; });
+              all = all.concat(a.obras);
+            });
+          }
+          if(py.obras){ py.obras.forEach(recomputeObra); all = all.concat(py.obras); }
+          var t=sumFields(all); FIELDS.forEach(function(f){ py[f]=t[f]; });
+        });
+        var t=sumFields(sp.proyectos); FIELDS.forEach(function(f){ sp[f]=t[f]; });
+      });
+      var t=sumFields(pg.subprogramas); FIELDS.forEach(function(f){ pg[f]=t[f]; });
+      pg.pctEjecucion = pg.vigente ? Math.round((pg.devengado/pg.vigente*10000))/100 : 0;
+    });
+
+    // Obras pendientes sin iniciar (misma lógica que el parser de texto)
+    const pendientes = [];
+    programas.forEach(pg=>{
+      pg.subprogramas.forEach(sp=>{
+        sp.proyectos.forEach(py=>{
+          function scan(list, actName){
+            list.forEach(o=>{
+              if(o.vigente>0 && o.devengado===0 && !/SIN (ACTIVIDAD|OBRA)/i.test(o.nombre)){
+                pendientes.push({programa:pg.codigo+' - '+pg.nombre, subprograma:sp.nombre, proyecto:py.nombre,
+                  actividad:actName||null, obra:o.codigo+' - '+o.nombre, vigente:o.vigente,
+                  saldoPorDevengar:o.saldoPorDevengar, saldoDisponible:o.saldoDisponible});
+              }
+            });
+          }
+          if(py.actividades) py.actividades.forEach(a=>scan(a.obras, a.nombre));
+          if(py.obras) scan(py.obras, null);
+        });
+      });
+    });
+    pendientes.sort((a,b)=>b.vigente-a.vigente);
+
+    const grandTotal = sumFields(programas);
+
+    // Validación contra la fila "TOTAL :" del propio reporte (solo compara
+    // los campos que esa fila trae disponibles; el resto queda en blanco,
+    // no en cero, y se ignora en la comparación).
+    var officialTotal = null;
+    for(var i=rows.length-1; i>=0 && i>rows.length-40; i--){
+      var joined = rows[i].join(' ').toUpperCase();
+      if(joined.indexOf('TOTAL') !== -1){
+        var r = rows[i];
+        var idxMap = { preCompromiso:32, compromiso:36, devengado:39, pagado:43, saldoDisponible:52, saldoPorDevengar:59, saldoPorPagar:65 };
+        officialTotal = {};
+        Object.keys(idxMap).forEach(function(f){
+          var raw = r[idxMap[f]];
+          officialTotal[f] = (raw===undefined || raw===null || raw==='') ? null : num(r, idxMap[f]);
+        });
+        break;
+      }
+    }
+    var validation = { ok:null };
+    if(officialTotal){
+      var diffs = {}; var maxDiff = 0; var anyCompared = false;
+      Object.keys(officialTotal).forEach(function(f){
+        if(officialTotal[f] === null){ diffs[f] = null; return; }
+        anyCompared = true;
+        var d = Math.round((grandTotal[f]-officialTotal[f])*100)/100;
+        diffs[f]=d; maxDiff=Math.max(maxDiff, Math.abs(d));
+      });
+      FIELDS.forEach(function(f){ if(diffs[f]===undefined){ diffs[f]=null; officialTotal[f]=null; } });
+      validation = anyCompared ? { ok: maxDiff < 5, diffs, maxDiff, officialTotal, computedTotal: grandTotal, partial:true } : { ok:null };
+    }
+
+    var joinedAll = rows.map(function(r){ return r.join(' '); }).join(' ');
+    return { programas, obrasPendientesSinIniciar: pendientes, grandTotal, validation, warnings:[], period: extractPeriod(joinedAll) };
+  }
+
+
+
+
+  /* ============ Flatten pasted JSON -> DB rows ============ */
+  function flattenPrograms(programas, periodEnd, periodStart, createdBy){
+    var rows = [];
+    programas.forEach(function(prog){
+      (prog.subprogramas||[]).forEach(function(sp){
+        (sp.proyectos||[]).forEach(function(proy){
+          function pushObra(act, o){
+            var row = {
+              period_end: periodEnd, period_start: periodStart,
+              programa_code: prog.codigo, programa_name: prog.nombre,
+              subprograma_code: sp.codigo, subprograma_name: sp.nombre,
+              proyecto_code: proy.codigo, proyecto_name: proy.nombre,
+              actividad_code: act ? act.codigo : '', actividad_name: act ? act.nombre : '',
+              obra_code: o.codigo, obra_name: o.nombre,
+              created_by: createdBy || null
+            };
+            FIELD_KEYS_CAMEL.forEach(function(camel){
+              var v = Number(o[camel]); row[FIELD_MAP[camel]] = isNaN(v) ? 0 : v;
+            });
+            row.renglones = Array.isArray(o.renglones) ? o.renglones : [];
+            rows.push(row);
+          }
+          if(proy.actividades && proy.actividades.length){
+            proy.actividades.forEach(function(act){ (act.obras||[]).forEach(function(o){ pushObra(act, o); }); });
+          } else if(proy.obras){
+            proy.obras.forEach(function(o){ pushObra(null, o); });
+          }
+        });
+      });
+    });
+    return rows;
+  }
+
+  /* ============ Rebuild nested tree + program rollup from flat rows ============ */
+  function buildTree(rows){
+    var progMap = {};
+    rows.forEach(function(r){
+      var pg = progMap[r.programa_code] || (progMap[r.programa_code] = {codigo:r.programa_code, nombre:r.programa_name, subMap:{}});
+      var sp = pg.subMap[r.subprograma_code] || (pg.subMap[r.subprograma_code] = {codigo:r.subprograma_code, nombre:r.subprograma_name, proyMap:{}});
+      var py = sp.proyMap[r.proyecto_code] || (sp.proyMap[r.proyecto_code] = {codigo:r.proyecto_code, nombre:r.proyecto_name, actMap:{}, obrasFlat:[]});
+      var obra = {
+        codigo:r.obra_code, nombre:r.obra_name,
+        asignado:+r.asignado, modificado:+r.modificado, vigente:+r.vigente, preCompromiso:+r.pre_compromiso,
+        compromiso:+r.compromiso, devengado:+r.devengado, pagado:+r.pagado,
+        saldoDisponible:+r.saldo_disponible, saldoPorDevengar:+r.saldo_por_devengar, saldoPorPagar:+r.saldo_por_pagar,
+        renglones: parseRenglonesField(r.renglones)
+      };
+      obra.estado = estadoDe(obra.vigente, obra.devengado);
+      obra.pctEjecucion = obra.vigente ? (obra.devengado/obra.vigente*100) : 0;
+      if(r.actividad_code){
+        var act = py.actMap[r.actividad_code] || (py.actMap[r.actividad_code] = {codigo:r.actividad_code, nombre:r.actividad_name, obras:[]});
+        act.obras.push(obra);
+      } else {
+        py.obrasFlat.push(obra);
+      }
+    });
+    function sumField(list, key){ return list.reduce(function(a,x){return a+(x[key]||0);},0); }
+
+    var programas = Object.keys(progMap).sort().map(function(pk){
+      var pg = progMap[pk];
+      var subprogramas = Object.keys(pg.subMap).sort().map(function(sk){
+        var sp = pg.subMap[sk];
+        var proyectos = Object.keys(sp.proyMap).sort().map(function(yk){
+          var py = sp.proyMap[yk];
+          var out = {codigo:py.codigo, nombre:py.nombre};
+          var actKeys = Object.keys(py.actMap);
+          var allObrasForTotals = py.obrasFlat.slice();
+          if(actKeys.length){
+            out.actividades = actKeys.sort().map(function(ak){ return py.actMap[ak]; });
+            out.actividades.forEach(function(a){ allObrasForTotals = allObrasForTotals.concat(a.obras); });
+          } else { out.obras = py.obrasFlat; }
+          FIELDS.forEach(function(f){ out[f]=sumField(allObrasForTotals, f); });
+          out.pctEjecucion = out.vigente ? (out.devengado/out.vigente*100) : 0;
+          out._pendCount = allObrasForTotals.filter(function(o){ return o.vigente>0 && o.devengado===0 && !/SIN ACTIVIDAD|SIN OBRA/i.test(o.nombre); }).length;
+          return out;
+        });
+        var spOut = {codigo:sp.codigo, nombre:sp.nombre, proyectos:proyectos};
+        FIELDS.forEach(function(f){ spOut[f] = proyectos.reduce(function(a,p){return a+(p[f]||0);},0); });
+        spOut._pendCount = proyectos.reduce(function(a,p){return a+p._pendCount;},0);
+        return spOut;
+      });
+      var pgOut = {codigo:pg.codigo, nombre:pg.nombre, subprogramas:subprogramas};
+      FIELDS.forEach(function(f){ pgOut[f] = subprogramas.reduce(function(a,s){return a+(s[f]||0);},0); });
+      pgOut.pctEjecucion = pgOut.vigente ? (pgOut.devengado/pgOut.vigente*100) : 0;
+      pgOut._pendCount = subprogramas.reduce(function(a,s){return a+s._pendCount;},0);
+      return pgOut;
+    });
+
+    var pendientes = [];
+    programas.forEach(function(pg){
+      pg.subprogramas.forEach(function(sp){
+        sp.proyectos.forEach(function(py){
+          function scan(list, actNombre){
+            list.forEach(function(o){
+              if(o.vigente>0 && o.devengado===0 && !/SIN ACTIVIDAD|SIN OBRA/i.test(o.nombre)){
+                pendientes.push({programa:pg.codigo+' - '+pg.nombre, subprograma:sp.nombre, proyecto:py.nombre,
+                  actividad:actNombre, obra:o.codigo+' - '+o.nombre, vigente:o.vigente,
+                  saldoDisponible:o.saldoDisponible, saldoPorDevengar:o.saldoPorDevengar});
+              }
+            });
+          }
+          if(py.actividades){ py.actividades.forEach(function(a){ scan(a.obras, a.nombre); }); }
+          else if(py.obras){ scan(py.obras, null); }
+        });
+      });
+    });
+    pendientes.sort(function(a,b){ return b.vigente-a.vigente; });
+    return { programas: programas, obrasPendientesSinIniciar: pendientes };
+  }
+
+  /* ============ Storage: load / save / delete ============ */
+  async function loadSnapshots(){
+    if(!supabaseClient){
+      setConfigBanner('Este dashboard todavía no está conectado a Supabase. Revisa el bloque <code>SUPABASE CONFIGURATION</code> en el script.');
+      return [];
+    }
+    try{
+      var res = await supabaseClient.from(TABLE).select('*').order('period_end', {ascending:true}).range(0, 49999);
+      if(res.error) throw res.error;
+      var byPeriod = {};
+      (res.data||[]).forEach(function(row){
+        var key = row.period_end;
+        if(!byPeriod[key]) byPeriod[key] = { periodEnd:key, periodStart:row.period_start, createdBy:[], createdAt:null, rows:[] };
+        byPeriod[key].rows.push(row);
+        if(row.created_by && byPeriod[key].createdBy.indexOf(row.created_by)===-1) byPeriod[key].createdBy.push(row.created_by);
+        if(row.created_at && (!byPeriod[key].createdAt || row.created_at > byPeriod[key].createdAt)) byPeriod[key].createdAt = row.created_at;
+      });
+      var snaps = Object.keys(byPeriod).sort().map(function(k){
+        var s = byPeriod[k];
+        var tree = buildTree(s.rows);
+        s.programas = tree.programas;
+        s.obrasPendientesSinIniciar = tree.obrasPendientesSinIniciar;
+        return s;
+      });
+      setConfigBanner(null);
+      return snaps;
+    }catch(e){
+      console.error("Error cargando desde Supabase:", e);
+      setConfigBanner('No se pudo leer de Supabase: <b>'+(e.message||e)+'</b>. Revisa que la tabla <code>budget_obras_snapshots</code> exista y que las políticas de RLS permitan lectura pública.');
+      return [];
+    }
+  }
+
+  async function saveSnapshot(periodEnd, periodStart, rows, statusElId){
+    var statusEl = document.getElementById(statusElId);
+    try{
+      if(!supabaseClient) throw new Error('Supabase no está configurado todavía.');
+      var del = await supabaseClient.from(TABLE).delete().eq('period_end', periodEnd);
+      if(del.error) throw del.error;
+      var ins = await supabaseClient.from(TABLE).insert(rows);
+      if(ins.error) throw ins.error;
+      state.snapshots = await loadSnapshots();
+      state.selectedPeriod = periodEnd;
+      statusEl.className = 'status-msg ok';
+      statusEl.textContent = 'Corte guardado ('+fmtDate(periodEnd)+') con '+rows.length+' obras, sincronizado para todo el equipo.';
+      render();
+    }catch(e){
+      statusEl.className = 'status-msg err';
+      statusEl.textContent = 'Error: ' + e.message;
+    }
+  }
+
+  async function deleteSnapshot(periodEnd){
+    try{
+      if(!supabaseClient) throw new Error('Supabase no está configurado.');
+      var res = await supabaseClient.from(TABLE).delete().eq('period_end', periodEnd);
+      if(res.error) throw res.error;
+      state.snapshots = await loadSnapshots();
+      if(state.selectedPeriod===periodEnd) state.selectedPeriod = null;
+      render();
+    }catch(e){
+      setConfigBanner('No se pudo eliminar el corte: <b>'+e.message+'</b>');
+    }
+  }
+
+  function currentMemberName(){
+    var v = (document.getElementById('memberName').value || '').trim();
+    if(v) localStorage.setItem('budget_dashboard_member_name', v);
+    return v || null;
+  }
+
+  function currentSnapshot(){
+    if(!state.snapshots.length) return null;
+    var s = state.snapshots.find(function(x){ return x.periodEnd===state.selectedPeriod; });
+    return s || state.snapshots[state.snapshots.length-1];
+  }
+  function prevSnapshot(){
+    var idx = state.snapshots.findIndex(function(x){ return x.periodEnd === (currentSnapshot()||{}).periodEnd; });
+    return idx>0 ? state.snapshots[idx-1] : null;
+  }
+  function totals(snap){
+    var t = {asignado:0,modificado:0,vigente:0,preCompromiso:0,compromiso:0,devengado:0,pagado:0,saldoDisponible:0,saldoPorDevengar:0,saldoPorPagar:0};
+    if(!snap) return t;
+    snap.programas.forEach(function(p){ FIELDS.forEach(function(f){ t[f]+=(p[f]||0); }); });
+    return t;
+  }
+
+  /* ============ RESUMEN view: hero, chart, alerts, table ============ */
+  var chartProgramas;
+
+  function renderHero(){
+    var s = currentSnapshot();
+    var t = totals(s);
+    var pct = t.vigente ? (t.devengado/t.vigente*100) : 0;
+    document.getElementById('sealPct').textContent = fmtPct(pct);
+    var tr = tier(pct/100);
+    var circumference = 2*Math.PI*80;
+    var arc = document.getElementById('sealArc');
+    arc.style.strokeDasharray = circumference;
+    arc.style.strokeDashoffset = circumference*(1-Math.min(pct/100,1));
+    arc.style.stroke = tr.c;
+    document.getElementById('statVigente').textContent = fmtCompact(t.vigente);
+    document.getElementById('statDevengado').textContent = fmtCompact(t.devengado)+' ('+fmtPct(pct)+')';
+    document.getElementById('statPagado').textContent = fmtCompact(t.pagado);
+    document.getElementById('statSaldo').textContent = fmtCompact(t.saldoDisponible);
+    var pend = s ? s.obrasPendientesSinIniciar : [];
+    document.getElementById('statObrasPend').textContent = pend.length + ' obras';
+    document.getElementById('statMontoPend').textContent = fmtCompact(pend.reduce(function(a,o){return a+o.vigente;},0));
+  }
+
+  function renderChart(){
+    try{
+      if(typeof Chart==='undefined') return; // Chart.js no cargó (red/adblock); el resto del dashboard sigue funcionando
+      var s = currentSnapshot();
+      var ctx = document.getElementById('chartProgramas');
+      if(!s){ if(chartProgramas){chartProgramas.destroy();chartProgramas=null;} return; }
+      var progs = s.programas.slice().sort(function(a,b){ return b.vigente-a.vigente; });
+      var labels = progs.map(function(p){ return p.codigo; });
+      var vig = progs.map(function(p){ return p.vigente; });
+      var dev = progs.map(function(p){ return p.devengado; });
+      if(chartProgramas) chartProgramas.destroy();
+      chartProgramas = new Chart(ctx, {
+        type:'bar',
+        data:{ labels:labels, datasets:[
+          {label:'Vigente', data:vig, backgroundColor:'#D9D1BE'},
+          {label:'Devengado', data:dev, backgroundColor:'#A9812B'}
+        ]},
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{position:'bottom', labels:{font:{family:'IBM Plex Sans', size:11}}} },
+          scales:{
+            x:{ ticks:{font:{family:'IBM Plex Mono', size:10}}, grid:{display:false} },
+            y:{ ticks:{callback:function(v){return fmtCompact(v);}, font:{family:'IBM Plex Mono', size:10}}, grid:{color:'#EFEAE0'} }
+          }
+        }
+      });
+    }catch(e){
+      console.error('No se pudo dibujar la gráfica de programas:', e);
+    }
+  }
+
+  function renderAlerts(){
+    var s = currentSnapshot();
+    var el = document.getElementById('alertList');
+    if(!s){ el.innerHTML = '<div class="alert-empty">Sin datos cargados todavía.</div>'; return; }
+    var t = totals(s);
+    var pctGlobal = t.vigente ? t.devengado/t.vigente : 0;
+    var hoy = new Date(s.periodEnd+"T00:00:00");
+    var inicioAno = new Date(hoy.getFullYear(),0,1);
+    var finAno = new Date(hoy.getFullYear(),11,31);
+    var pctAno = (hoy-inicioAno)/(finAno-inicioAno);
+    var alerts = [];
+    if(pctAno - pctGlobal > 0.08){
+      alerts.push({sev:'alto', text:'<b>Ejecución rezagada frente al calendario fiscal:</b> ha transcurrido '+fmtPct(pctAno*100)+' del año pero solo se ha ejecutado '+fmtPct(pctGlobal*100)+' del presupuesto vigente (brecha de '+fmtPct((pctAno-pctGlobal)*100)+').'});
+    }
+    var candidates = s.programas.filter(function(p){ return p.vigente > t.vigente*0.05; })
+      .map(function(p){ return {p:p, pct: p.vigente>0? p.devengado/p.vigente:0}; })
+      .sort(function(a,b){ return a.pct-b.pct; });
+    if(candidates.length && candidates[0].pct < 0.35){
+      var w = candidates[0];
+      alerts.push({sev:'medio', text:'<b>Prioridad de atención:</b> '+w.p.codigo+' — '+w.p.nombre+' concentra '+fmtPct(w.p.vigente/t.vigente*100)+' del presupuesto vigente total y solo ha ejecutado '+fmtPct(w.pct*100)+'.'});
+    }
+    var pend = s.obrasPendientesSinIniciar;
+    if(pend.length){
+      var pendVig = pend.reduce(function(a,o){return a+o.vigente;},0);
+      alerts.push({sev: pendVig>t.vigente*0.15 ? 'alto':'medio', text:'<b>Obras sin arrancar:</b> '+pend.length+' obras físicas todavía no tienen ningún devengado, por un total de '+fmtCompact(pendVig)+'.'});
+    }
+    el.innerHTML = alerts.length ? alerts.map(function(a){
+      var label = a.sev==='alto'?'Alto':'Medio';
+      return '<div class="alert sev-'+a.sev+'"><span class="sev">'+label+'</span><span>'+a.text+'</span></div>';
+    }).join('') : '<div class="alert-empty">Sin alertas relevantes con los datos cargados hasta ahora.</div>';
+  }
+
+  function renderProgTable(){
+    var s = currentSnapshot();
+    var tbody = document.getElementById('progTableBody');
+    if(!s){ tbody.innerHTML = '<tr><td colspan="7" class="empty">Sin datos cargados.</td></tr>'; document.getElementById('progTableCount').textContent=''; return; }
+    var rows = s.programas.map(function(p){
+      return { name:p.codigo+' — '+p.nombre, vigente:p.vigente, devengado:p.devengado,
+        pct: p.vigente? p.devengado/p.vigente:0, saldo:p.saldoDisponible, saldoPorDevengar:p.saldoPorDevengar,
+        pendientes:p._pendCount };
+    });
+    rows.sort(function(a,b){
+      var k = state.sortKey, dir = state.sortDir==='asc'?1:-1;
+      if(k==='name') return dir*(a.name<b.name?-1:1);
+      return dir*((a[k]||0)-(b[k]||0));
+    });
+    tbody.innerHTML = rows.map(function(r){
+      var tr = tier(r.pct);
+      return '<tr><td class="name">'+esc(r.name)+'</td>'+
+        '<td class="mono">'+fmtQ(r.vigente)+'</td>'+
+        '<td class="mono">'+fmtQ(r.devengado)+'</td>'+
+        '<td><span class="pct-cell"><span class="pct-track"><span class="pct-fill" style="width:'+Math.min(r.pct*100,100)+'%;background:'+tr.c+';"></span></span>'+fmtPct(r.pct*100)+'</span></td>'+
+        '<td class="mono saldo-disp">'+fmtQ(r.saldo)+'</td>'+
+        '<td class="mono">'+fmtQ(r.saldoPorDevengar)+'</td>'+
+        '<td class="mono">'+(r.pendientes||0)+'</td></tr>';
+    }).join('');
+    document.getElementById('progTableCount').textContent = rows.length + ' programas';
+  }
+
+  /* ============ OBRAS view: stat band, pending table, tree ============ */
+  function renderStatBand(){
+    var s = currentSnapshot();
+    var band = document.getElementById('statBand');
+    if(!s){ band.innerHTML = '<div class="cell"><div class="k">Sin datos</div><div class="v">—</div></div>'; return; }
+    var t = totals(s);
+    var pct = t.vigente? (t.devengado/t.vigente*100):0;
+    var pend = s.obrasPendientesSinIniciar;
+    var pendVig = pend.reduce(function(a,o){return a+o.vigente;},0);
+    var cells = [
+      ['Presupuesto vigente total', fmtCompact(t.vigente), null],
+      ['Devengado acumulado', fmtCompact(t.devengado)+' <small>('+fmtPct(pct)+')</small>', null],
+      ['Obras sin iniciar', pend.length+' obras', 'bad'],
+      ['Monto sin ejecutar en obras', fmtCompact(pendVig), 'bad'],
+    ];
+    band.innerHTML = cells.map(function(c){
+      return '<div class="cell"><div class="k">'+c[0]+'</div><div class="v'+(c[2]?' '+c[2]:'')+'">'+c[1]+'</div></div>';
+    }).join('');
+  }
+
+  function renderPending(){
+    var s = currentSnapshot();
+    var pend = s ? s.obrasPendientesSinIniciar : [];
+    document.getElementById('pendCount').textContent = pend.length + ' obra(s) detectada(s)';
+    document.getElementById('pendBody').innerHTML = pend.length ? pend.map(function(o){
+      return '<tr><td class="obra">'+esc(o.obra)+
+        '<div class="meta">'+esc(o.proyecto)+(o.actividad?' · '+esc(o.actividad):'')+'</div></td>'+
+        '<td class="meta">'+esc(o.programa)+'</td>'+
+        '<td class="num">'+fmtQ(o.vigente)+'</td>'+
+        '<td class="num saldo-disp">'+fmtQ(o.saldoDisponible)+'</td>'+
+        '<td class="num">'+fmtQ(o.saldoPorDevengar)+'</td></tr>';
+    }).join('') : '<tr><td colspan="5" class="empty">Sin obras pendientes detectadas en este corte.</td></tr>';
+  }
+
+  function obraMatches(o){
+    if(state.filter!=='todos' && o.estado!==state.filter) return false;
+    if(state.q){
+      var hay = (o.nombre+' '+o.codigo).toLowerCase();
+      if(hay.indexOf(state.q)===-1) return false;
+    }
+    return true;
+  }
+  function renderRenglonTable(renglones){
+    var rows = renglones.map(function(r){
+      return '<tr><td class="mono">'+esc(r.codigo)+'</td><td class="mono">'+esc(r.clasificador)+'</td>'+
+        '<td>'+esc(r.nombre)+'</td><td class="mono">'+esc(r.grupoGasto||'')+'</td>'+
+        '<td class="num">'+fmtQ(r.vigente)+'</td><td class="num">'+fmtQ(r.devengado)+'</td>'+
+        '<td class="num saldo-disp">'+fmtQ(r.saldoDisponible)+'</td><td class="num">'+fmtQ(r.saldoPorDevengar)+'</td></tr>';
+    }).join('');
+    return '<table class="renglon-table"><thead><tr><th>Renglón</th><th>Clasificador</th><th>Descripción</th><th>Grupo</th>'+
+      '<th class="num">Vigente</th><th class="num">Devengado</th><th class="num">Saldo disp.</th><th class="num">Saldo por dev.</th></tr></thead>'+
+      '<tbody>'+rows+'</tbody></table>';
+  }
+  function renderObraRow(o, ctx){
+    var rCount = (o.renglones||[]).length;
+    var toggle = rCount ? ' <span class="renglon-toggle">▸ '+rCount+' '+(rCount===1?'renglón':'renglones')+'</span>' : '';
+    var printBtn = '';
+    if(rCount){
+      var idx = window.__printRegistry.length;
+      window.__printRegistry.push({ obra:o, ctx:ctx });
+      printBtn = ' <button type="button" class="print-renglones-btn" data-print-idx="'+idx+'" title="Imprimir detalle de renglones">🖶 Imprimir</button>';
+    }
+    var detail = rCount ? '<div class="renglon-detail">'+renderRenglonTable(o.renglones)+printBtn+'</div>' : '';
+    return '<div class="obra-row-wrap">'+
+      '<div class="obra-row">'+
+        '<div class="nm"><span class="code">'+esc(o.codigo)+'</span>'+esc(o.nombre)+toggle+'</div>'+
+        '<div class="num">'+fmtQ(o.vigente)+'</div>'+
+        '<div class="num">'+fmtQ(o.devengado)+'</div>'+
+        '<div class="num saldo-disp">'+fmtQ(o.saldoDisponible)+'</div>'+
+        '<div class="num">'+fmtQ(o.saldoPorDevengar)+'</div>'+
+        '<div>'+tagFor(o.estado)+'</div>'+
+      '</div>'+detail+
+    '</div>';
+  }
+  function renderProyecto(proy, ctx){
+    var blocks = '';
+    if(proy.actividades){
+      proy.actividades.forEach(function(a){
+        var visible = a.obras.filter(obraMatches);
+        if(!visible.length) return;
+        var actCtx = Object.assign({}, ctx, { proyecto: proy.codigo+' — '+proy.nombre, actividad: a.codigo+' — '+a.nombre });
+        blocks += '<div class="acti-label">'+esc(a.codigo)+' · '+esc(a.nombre)+'</div>'+
+          visible.map(function(o){ return renderObraRow(o, actCtx); }).join('');
+      });
+    } else if(proy.obras){
+      var visible = proy.obras.filter(obraMatches);
+      var proyCtx = Object.assign({}, ctx, { proyecto: proy.codigo+' — '+proy.nombre, actividad: null });
+      blocks += visible.map(function(o){ return renderObraRow(o, proyCtx); }).join('');
+    }
+    if(!blocks) return '';
+    return '<div class="proy"><div class="head"><span class="code">'+esc(proy.codigo)+'</span><span class="name">'+esc(proy.nombre)+'</span>'+
+      '<span class="figs">Vigente '+fmtCompact(proy.vigente)+' · Devengado '+fmtCompact(proy.devengado)+'</span></div>'+blocks+'</div>';
+  }
+  function renderSubprograma(sp, ctx){
+    var subCtx = Object.assign({}, ctx, { subprograma: sp.codigo+' — '+sp.nombre });
+    var html = sp.proyectos.map(function(py){ return renderProyecto(py, subCtx); }).join('');
+    if(!html.trim()) return '';
+    return '<details class="subp" open><summary>Subprograma '+esc(sp.codigo)+' — '+esc(sp.nombre)+'</summary><div class="inner">'+html+'</div></details>';
+  }
+  function renderPrograma(p){
+    var progCtx = { programa: p.codigo+' — '+p.nombre };
+    var html = p.subprogramas.map(function(sp){ return renderSubprograma(sp, progCtx); }).join('');
+    if(!html.trim()) return '';
+    return '<details class="prog"><summary><span class="arrow">▸</span>'+
+      '<span class="name"><span class="code">'+esc(p.codigo)+'</span>'+esc(p.nombre)+'</span>'+
+      '<span class="figs"><span>Vigente '+fmtCompact(p.vigente)+'</span><span>'+fmtPct(p.pctEjecucion)+' ejecutado</span></span>'+
+      '</summary><div class="inner">'+html+'</div></details>';
+  }
+  function renderTree(){
+    var s = currentSnapshot();
+    var el = document.getElementById('tree');
+    window.__printRegistry = [];
+    if(!s){ el.innerHTML = '<div class="empty">Todavía no hay ningún corte registrado. Pega el primer JSON abajo en "Registrar corte semanal".</div>'; document.getElementById('progCount').textContent=''; return; }
+    var html = s.programas.map(renderPrograma).join('');
+    el.innerHTML = html.trim() ? html : '<div class="empty">Sin resultados para este filtro/búsqueda.</div>';
+    document.getElementById('progCount').textContent = s.programas.length + ' programas';
+  }
+
+  /* ============ Print a single obra's renglon detail ============ */
+  function printObraRenglones(entry){
+    var o = entry.obra, ctx = entry.ctx || {};
+    var pct = o.vigente ? (o.devengado/o.vigente*100) : 0;
+    var rows = (o.renglones||[]).map(function(r){
+      return '<tr><td class="pr-mono">'+esc(r.codigo)+'</td><td class="pr-mono">'+esc(r.clasificador)+'</td>'+
+        '<td>'+esc(r.nombre)+'</td>'+
+        '<td class="pr-num">'+fmtQ(r.vigente)+'</td><td class="pr-num">'+fmtQ(r.devengado)+'</td>'+
+        '<td class="pr-num pr-green">'+fmtQ(r.saldoDisponible)+'</td><td class="pr-num">'+fmtQ(r.saldoPorDevengar)+'</td></tr>';
+    }).join('');
+    var ctxRow = function(label, value){
+      if(!value) return '';
+      return '<tr><td class="pr-ctxlabel">'+label+'</td><td class="pr-ctxval">'+esc(value)+'</td></tr>';
+    };
+    var todayStr = new Date().toLocaleDateString('es-GT', {day:'2-digit',month:'2-digit',year:'numeric'});
+    var html = ''+
+      '<div class="pr-eyebrow">MUNICIPALIDAD DE TOTONICAPÁN &nbsp;·&nbsp; CLASIFICACIÓN INSTITUCIONAL 12100801</div>'+
+      '<h1 class="pr-h1">Detalle de Renglones por Obra</h1>'+
+      '<div class="pr-sub">Corte mostrado: '+esc(document.getElementById('metaPeriod').textContent)+'</div>'+
+      '<hr class="pr-hr">'+
+      '<table class="pr-ctx">'+
+        ctxRow('PROGRAMA', ctx.programa)+ctxRow('SUBPROGRAMA', ctx.subprograma)+
+        ctxRow('PROYECTO', ctx.proyecto)+ctxRow('ACTIVIDAD', ctx.actividad)+
+        ctxRow('OBRA', o.codigo+' · '+o.nombre)+
+      '</table>'+
+      '<table class="pr-stats"><tr>'+
+        '<td><div class="pr-statlabel">VIGENTE<br><span>presupuesto total</span></div><div class="pr-statval">'+fmtQ(o.vigente)+'</div></td>'+
+        '<td><div class="pr-statlabel">DEVENGADO<br><span>ya ejecutado</span></div><div class="pr-statval">'+fmtQ(o.devengado)+'<br><span class="pr-pct">'+pct.toFixed(1)+'%</span></div></td>'+
+        '<td><div class="pr-statlabel">SALDO DISPONIBLE<br><span>sin comprometer</span></div><div class="pr-statval pr-green">'+fmtQ(o.saldoDisponible)+'</div></td>'+
+        '<td><div class="pr-statlabel">SALDO POR DEVENGAR<br><span>comprometido, falta ejecutar</span></div><div class="pr-statval">'+fmtQ(o.saldoPorDevengar)+'</div></td>'+
+        '<td><div class="pr-statlabel">ESTADO</div><div class="pr-estado">'+tagFor(o.estado)+'</div></td>'+
+      '</tr></table>'+
+      '<h2 class="pr-h2">Renglones individuales</h2>'+
+      '<table class="pr-table"><thead><tr><th>Renglón</th><th>Clasificador</th><th>Descripción</th>'+
+        '<th class="pr-num">Vigente</th><th class="pr-num">Devengado</th><th class="pr-num">Saldo Disp.</th><th class="pr-num">Saldo por Dev.</th></tr></thead>'+
+        '<tbody>'+rows+
+        '<tr class="pr-total"><td></td><td></td><td><b>TOTAL ('+(o.renglones||[]).length+' renglones)</b></td>'+
+        '<td class="pr-num"><b>'+fmtQ(o.vigente)+'</b></td><td class="pr-num"><b>'+fmtQ(o.devengado)+'</b></td>'+
+        '<td class="pr-num pr-green"><b>'+fmtQ(o.saldoDisponible)+'</b></td><td class="pr-num"><b>'+fmtQ(o.saldoPorDevengar)+'</b></td></tr>'+
+        '</tbody></table>'+
+      '<div class="pr-footer">Fuente: SICOIN GL — Ejecución de Egresos Consolidado del Ejercicio · Generado desde el Panel de Ejecución Presupuestaria · Impreso el '+todayStr+'</div>';
+    document.getElementById('printArea').innerHTML = html;
+    var slug = ((o.codigo||'')+'_'+(o.nombre||'')).toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,60);
+    window.__renglonPdfName = 'renglones_' + (slug || 'obra') + '.pdf';
+    window.__currentRenglonEntry = { obra:o, ctx:ctx };
+    document.getElementById('renglonModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeRenglonModal(){
+    document.getElementById('renglonModal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function estadoLabel(estado){
+    var map = {
+      pendiente_sin_iniciar:'Pendiente', en_ejecucion:'En ejecución',
+      completado:'Completado', sin_asignacion:'Sin asignación'
+    };
+    return map[estado] || (estado || '—');
+  }
+
+  function buildRenglonesPdf(entry){
+    var o = entry.obra, ctx = entry.ctx || {};
+    var pct = o.vigente ? (o.devengado/o.vigente*100) : 0;
+    var jsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    var doc = new jsPDFCtor({ unit:'mm', format:'letter' });
+    var pageW = doc.internal.pageSize.getWidth();
+    var margin = 12;
+    var y = margin;
+
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+    doc.setTextColor(169,129,43);
+    doc.text('MUNICIPALIDAD DE TOTONICAPÁN  ·  CLASIFICACIÓN INSTITUCIONAL 12100801', margin, y);
+    y += 5.5;
+
+    doc.setFont('times','bold'); doc.setFontSize(16);
+    doc.setTextColor(22,35,58);
+    doc.text('Detalle de Renglones por Obra', margin, y);
+    y += 5;
+
+    doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
+    doc.setTextColor(91,99,115);
+    var periodTxt = (document.getElementById('metaPeriod')||{}).textContent || '';
+    doc.text('Corte mostrado: ' + periodTxt, margin, y);
+    y += 3;
+    doc.setDrawColor(169,129,43); doc.setLineWidth(0.5);
+    doc.line(margin, y, pageW - margin, y);
+    y += 4;
+
+    var ctxRows = [];
+    function pushCtx(label, value){ if(value) ctxRows.push([label, String(value)]); }
+    pushCtx('PROGRAMA', ctx.programa);
+    pushCtx('SUBPROGRAMA', ctx.subprograma);
+    pushCtx('PROYECTO', ctx.proyecto);
+    pushCtx('ACTIVIDAD', ctx.actividad);
+    pushCtx('OBRA', (o.codigo||'') + ' · ' + (o.nombre||''));
+
+    doc.autoTable({
+      startY: y, margin:{left:margin, right:margin},
+      body: ctxRows, theme:'grid',
+      styles:{ font:'helvetica', fontSize:7.6, cellPadding:1.6, textColor:[32,41,58], lineColor:[217,209,190], lineWidth:0.15 },
+      columnStyles:{ 0:{ cellWidth:30, fontStyle:'bold', textColor:[138,143,156], fontSize:6.3 } }
+    });
+    y = doc.lastAutoTable.finalY + 4;
+
+    doc.autoTable({
+      startY: y, margin:{left:margin, right:margin},
+      body: [[
+        'VIGENTE\npresupuesto total\n' + fmtQ(o.vigente),
+        'DEVENGADO\nya ejecutado\n' + fmtQ(o.devengado) + '  (' + pct.toFixed(1) + '%)',
+        'SALDO DISPONIBLE\nsin comprometer\n' + fmtQ(o.saldoDisponible),
+        'SALDO POR DEVENGAR\ncomprometido\n' + fmtQ(o.saldoPorDevengar),
+        'ESTADO\n\n' + estadoLabel(o.estado)
+      ]],
+      theme:'grid',
+      styles:{ font:'helvetica', fontSize:7.3, cellPadding:2, textColor:[32,41,58], lineColor:[217,209,190], lineWidth:0.15, valign:'top' }
+    });
+    y = doc.lastAutoTable.finalY + 5;
+
+    doc.setFont('times','bold'); doc.setFontSize(11);
+    doc.setTextColor(22,35,58);
+    doc.text('Renglones individuales', margin, y);
+    y += 3;
+
+    var renglones = o.renglones || [];
+    var body = renglones.map(function(r){
+      return [r.codigo||'', r.clasificador||'', r.nombre||'', fmtQ(r.vigente), fmtQ(r.devengado), fmtQ(r.saldoDisponible), fmtQ(r.saldoPorDevengar)];
+    });
+    body.push(['', '', 'TOTAL (' + renglones.length + ' renglones)', fmtQ(o.vigente), fmtQ(o.devengado), fmtQ(o.saldoDisponible), fmtQ(o.saldoPorDevengar)]);
+    var totalRowIdx = body.length - 1;
+
+    doc.autoTable({
+      startY: y, margin:{left:margin, right:margin},
+      head: [['Renglón','Clasificador','Descripción','Vigente','Devengado','Saldo Disp.','Saldo por Dev.']],
+      body: body, theme:'grid',
+      styles:{ font:'helvetica', fontSize:6.9, cellPadding:1.4, textColor:[32,41,58], lineColor:[217,209,190], lineWidth:0.12, overflow:'linebreak' },
+      headStyles:{ fillColor:[251,249,244], textColor:[91,99,115], fontStyle:'bold', fontSize:6.3 },
+      columnStyles:{
+        0:{ cellWidth:14 }, 1:{ cellWidth:20 }, 2:{ cellWidth:'auto' },
+        3:{ halign:'right', cellWidth:20 }, 4:{ halign:'right', cellWidth:20 },
+        5:{ halign:'right', cellWidth:20, textColor:[62,156,99] }, 6:{ halign:'right', cellWidth:22 }
+      },
+      didParseCell: function(data){
+        if(data.row.index === totalRowIdx){ data.cell.styles.fontStyle = 'bold'; }
+      }
+    });
+    y = doc.lastAutoTable.finalY + 4;
+
+    if(y > doc.internal.pageSize.getHeight() - 14){ doc.addPage(); y = margin; }
+    doc.setFont('courier','normal'); doc.setFontSize(6.4);
+    doc.setTextColor(138,143,156);
+    var todayStr = new Date().toLocaleDateString('es-GT', {day:'2-digit',month:'2-digit',year:'numeric'});
+    doc.text('Fuente: SICOIN GL — Ejecución de Egresos Consolidado del Ejercicio · Generado desde el Panel de Ejecución Presupuestaria · Impreso el ' + todayStr, margin, y);
+
+    return doc;
+  }
+
+  function downloadRenglonesPdf(){
+    var btn = document.getElementById('rgDownload');
+    var original = btn.innerHTML;
+    var entry = window.__currentRenglonEntry;
+    if(!entry){ alert('No hay datos para generar el PDF.'); return; }
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Generando…';
+    try{
+      var doc = buildRenglonesPdf(entry);
+      doc.save(window.__renglonPdfName || 'renglones.pdf');
+    }catch(err){
+      console.error('Error generando PDF:', err);
+      alert('No se pudo generar el PDF: ' + (err && err.message ? err.message : err));
+    }finally{
+      btn.disabled = false;
+      btn.innerHTML = original;
+    }
+  }
+
+  document.getElementById('rgClose').addEventListener('click', closeRenglonModal);
+  document.getElementById('rgDownload').addEventListener('click', downloadRenglonesPdf);
+  document.getElementById('renglonModal').addEventListener('click', function(e){
+    if(e.target.id === 'renglonModal') closeRenglonModal();
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && document.getElementById('renglonModal').classList.contains('open')) closeRenglonModal();
+  });
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('.print-renglones-btn');
+    if(!btn) return;
+    var idx = Number(btn.dataset.printIdx);
+    var entry = window.__printRegistry && window.__printRegistry[idx];
+    if(entry) printObraRenglones(entry);
+  });
+
+  /* ============ Snapshot list + period selector ============ */
+  function renderPeriodSelect(){
+    var sel = document.getElementById('periodSelect');
+    var snaps = state.snapshots.slice().reverse();
+    sel.innerHTML = snaps.map(function(s){ return '<option value="'+s.periodEnd+'">'+fmtDate(s.periodEnd)+'</option>'; }).join('');
+    var cur = currentSnapshot();
+    if(cur) sel.value = cur.periodEnd;
+    document.getElementById('metaCount').textContent = state.snapshots.length;
+    document.getElementById('metaPeriod').textContent = cur ? fmtDate(cur.periodEnd) : '—';
+  }
+
+  function renderSnapList(){
+    var el = document.getElementById('snapListBody');
+    var snaps = state.snapshots.slice().reverse();
+    if(!snaps.length){ el.innerHTML = '<p class="empty">No hay cortes registrados.</p>'; return; }
+    el.innerHTML = snaps.map(function(s){
+      var t = totals(s);
+      var pct = t.vigente? (t.devengado/t.vigente*100):0;
+      var by = s.createdBy.length ? (' · registrado por '+s.createdBy.join(', ')) : '';
+      var hora = fmtTime(s.createdAt);
+      var horaHtml = hora ? ' <span class="hora">· '+hora+'</span>' : '';
+      return '<div class="snap-row">'+
+        '<span class="d">'+fmtDate(s.periodEnd)+horaHtml+'</span>'+
+        '<span class="m">Vigente '+fmtCompact(t.vigente)+' · Devengado '+fmtCompact(t.devengado)+' · '+fmtPct(pct)+' ejecutado · '+s.obrasPendientesSinIniciar.length+' obras pendientes'+by+'</span>'+
+        '<span class="sp">'+
+          '<button class="btn secondary" data-view-snap="'+s.periodEnd+'" style="padding:5px 9px;font-size:11px;">Ver</button>'+
+          '<button class="btn danger-ghost" data-del="'+s.periodEnd+'">Eliminar</button>'+
+        '</span></div>';
+    }).join('');
+    el.querySelectorAll('[data-del]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        if(confirm('¿Eliminar el corte del '+fmtDate(btn.dataset.del)+'? Esta acción no se puede deshacer.')) deleteSnapshot(btn.dataset.del);
+      });
+    });
+    el.querySelectorAll('[data-view-snap]').forEach(function(btn){
+      btn.addEventListener('click', function(){ state.selectedPeriod = btn.dataset.viewSnap; render(); window.scrollTo({top:0,behavior:'smooth'}); });
+    });
+  }
+
+  /* ============ Master render ============ */
+  function safe(fn, label){
+    try{ fn(); } catch(e){ console.error('Error renderizando '+label+':', e); }
+  }
+  function render(){
+    safe(renderPeriodSelect, 'selector de corte');
+    safe(renderHero, 'resumen general');
+    safe(renderChart, 'gráfica de programas');
+    safe(renderAlerts, 'alertas');
+    safe(renderProgTable, 'tabla de programas');
+    safe(renderStatBand, 'banda de estadísticas');
+    safe(renderPending, 'tabla de obras pendientes');
+    safe(renderTree, 'árbol de obras');
+    safe(renderSnapList, 'lista de cortes');
+  }
+
+  /* ============ Events ============ */
+  var VIEW_PANEL_IDS = { resumen:'viewResumen', obras:'viewObras', explorar:'viewExplorar', carga:'viewCarga' };
+  document.querySelectorAll('.view-tab').forEach(function(tab){
+    tab.addEventListener('click', function(){
+      document.querySelectorAll('.view-tab').forEach(function(t){t.classList.remove('active');});
+      document.querySelectorAll('.view-panel').forEach(function(p){p.classList.remove('active');});
+      tab.classList.add('active');
+      document.getElementById(VIEW_PANEL_IDS[tab.dataset.view]).classList.add('active');
+      if(tab.dataset.view==='resumen') renderChart();
+    });
+  });
+
+  document.getElementById('searchBox').addEventListener('input', function(e){ state.q = e.target.value.trim().toLowerCase(); renderTree(); });
+  document.getElementById('tree').addEventListener('click', function(e){
+    var t = e.target.closest('.renglon-toggle');
+    if(!t) return;
+    var wrap = t.closest('.obra-row-wrap');
+    var detail = wrap && wrap.querySelector('.renglon-detail');
+    if(detail) detail.classList.toggle('open');
+  });
+  document.querySelectorAll('.chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      document.querySelectorAll('.chip').forEach(function(c){c.classList.remove('active');});
+      chip.classList.add('active'); state.filter = chip.dataset.filter; renderTree();
+    });
+  });
+  document.getElementById('periodSelect').addEventListener('change', function(e){ state.selectedPeriod = e.target.value; render(); });
+
+  document.querySelectorAll('#progTable thead th').forEach(function(th){
+    th.addEventListener('click', function(){
+      var key = th.dataset.key;
+      if(state.sortKey===key){ state.sortDir = state.sortDir==='asc'?'desc':'asc'; }
+      else { state.sortKey=key; state.sortDir='desc'; }
+      renderProgTable();
+    });
+  });
+
+  document.getElementById('btnAddJson').addEventListener('click', function(){
+    var raw = document.getElementById('jsonInput').value.trim();
+    var statusEl = document.getElementById('jsonStatus');
+    if(!raw){ statusEl.className='status-msg err'; statusEl.textContent='Pega primero el bloque de datos JSON.'; return; }
+    try{
+      var obj = JSON.parse(raw);
+      if(!obj.periodEnd || !Array.isArray(obj.programas) || !obj.programas.length){
+        throw new Error('Formato inválido: falta periodEnd o el arreglo de programas.');
+      }
+      var rows = flattenPrograms(obj.programas, obj.periodEnd, obj.periodStart || obj.periodEnd, currentMemberName());
+      if(!rows.length){ throw new Error('El JSON no contiene ninguna obra en sus hojas (revisa la estructura de proyectos/actividades/obras).'); }
+      saveSnapshot(obj.periodEnd, obj.periodStart || obj.periodEnd, rows, 'jsonStatus');
+    }catch(e){
+      statusEl.className='status-msg err';
+      statusEl.textContent = (e instanceof SyntaxError ? 'El texto no es JSON válido: ' : 'Error: ') + e.message;
+    }
+  });
+  document.getElementById('btnClearJson').addEventListener('click', function(){
+    document.getElementById('jsonInput').value=''; document.getElementById('jsonStatus').className='status-msg';
+  });
+
+  /* ---- Sub-tabs: Pegar texto/TXT vs Pegar JSON ---- */
+  document.querySelectorAll('.tab-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+      document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active');});
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  /* ---- File upload -> textarea ---- */
+  document.getElementById('fileInput').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){ document.getElementById('rawTextInput').value = ev.target.result; };
+    reader.readAsText(file, 'utf-8');
+  });
+
+  /* ---- Analizar: run the browser parser, show validation diff ---- */
+  var lastParseResult = null;
+  document.getElementById('btnAnalyze').addEventListener('click', function(){
+    var raw = document.getElementById('rawTextInput').value;
+    var statusEl = document.getElementById('autoStatus');
+    var previewEl = document.getElementById('autoPreview');
+    previewEl.style.display = 'none';
+    lastParseResult = null;
+    if(!raw || raw.trim().length < 200){
+      statusEl.className='status-msg err'; statusEl.textContent='Pega el texto completo del reporte, o sube el archivo .txt.';
+      return;
+    }
+    var result;
+    try{
+      result = parseRawReport(raw);
+    }catch(e){
+      statusEl.className='status-msg err'; statusEl.textContent='No se pudo analizar el texto: '+e.message;
+      return;
+    }
+    // El texto copiado desde el reporte de SICOIN GL suele venir separado por
+    // tabulaciones (igual que las celdas del Excel). Si el parser de texto no
+    // reconoció nada, lo intentamos de nuevo tratando el texto como filas de
+    // Excel (mismo parser robusto que usa la pestaña "Subir Excel").
+    if(!result.programas.length && raw.indexOf('\t') !== -1){
+      try{
+        var rowsFromText = raw.split(/\r?\n/).map(function(line){ return line.split('\t'); });
+        var altResult = parseExcelSicoin(rowsFromText);
+        if(altResult.programas.length) result = altResult;
+      }catch(e2){ /* si falla, seguimos con el resultado original (vacío) */ }
+    }
+    if(!result.programas.length){
+      statusEl.className='status-msg err'; statusEl.textContent='No se reconoció ningún programa en el texto pegado. Verifica que sea el reporte completo.';
+      return;
+    }
+    if(!result.validation || result.validation.ok===null){
+      statusEl.className='status-msg err'; statusEl.textContent='El reporte no trae una línea "TOTAL :" reconocible, no se puede validar automáticamente. Usa la pestaña "Pegar JSON" en su lugar.';
+      return;
+    }
+    lastParseResult = result;
+    window.__debugLastParse = result;
+    var v = result.validation;
+    var rows = FIELDS.map(function(f){
+      var cls = Math.abs(v.diffs[f])<0.02 ? 'diff-ok' : 'diff-bad';
+      return '<tr><td>'+f+'</td><td class="num">'+fmtQ(v.computedTotal[f])+'</td><td class="num">'+fmtQ(v.officialTotal[f])+'</td><td class="num '+cls+'">'+fmtQ(v.diffs[f])+'</td></tr>';
+    }).join('');
+    document.getElementById('autoDiffBody').innerHTML = rows;
+    document.getElementById('autoMeta').textContent = result.programas.length+' programas · '+result.obrasPendientesSinIniciar.length+' obras pendientes'+(result.period?(' · corte '+result.period.periodEnd):'');
+    previewEl.style.display = 'block';
+    if(v.ok){
+      statusEl.className='status-msg ok';
+      statusEl.textContent='Coincide exacto con el total oficial del reporte (diferencia Q0.00). Listo para guardar.';
+    } else {
+      statusEl.className='status-msg err';
+      statusEl.textContent='El total calculado NO coincide con el total oficial del reporte (diferencia máxima Q'+v.maxDiff.toLocaleString('en-US',{minimumFractionDigits:2})+'). Revisa la tabla abajo antes de guardar — puede que el formato de este reporte tenga alguna variación no reconocida. Si prefieres, usa la pestaña "Pegar JSON" y pídele el JSON a Claude en su lugar.';
+    }
+  });
+
+  document.getElementById('btnClearAuto').addEventListener('click', function(){
+    document.getElementById('rawTextInput').value=''; document.getElementById('fileInput').value='';
+    document.getElementById('autoStatus').className='status-msg'; document.getElementById('autoPreview').style.display='none';
+    lastParseResult = null;
+  });
+
+  /* ---- Excel (SICOIN GL) upload -> parse -> preview -> save ---- */
+  var lastXlsxParseResult = null;
+
+  function renderXlsxResult(result){
+    var statusEl = document.getElementById('xlsxStatus');
+    var previewEl = document.getElementById('xlsxPreview');
+    if(!result.programas.length){
+      statusEl.className='status-msg err';
+      statusEl.textContent='No se reconoció ningún programa en el archivo. Verifica que sea el reporte de "Ejecución de Egresos del Ejercicio" con "Todos los Programas".';
+      previewEl.style.display='none';
+      return;
+    }
+    lastXlsxParseResult = result;
+    window.__debugLastXlsxParse = result;
+    var v = result.validation;
+    var rowsHtml = FIELDS.map(function(f){
+      var hasOfficial = v.officialTotal && v.officialTotal[f] !== null && v.officialTotal[f] !== undefined;
+      var official = hasOfficial ? fmtQ(v.officialTotal[f]) : '—';
+      var diffTxt = hasOfficial ? fmtQ(v.diffs[f]) : '—';
+      var cls = hasOfficial ? (Math.abs(v.diffs[f])<0.02 ? 'diff-ok' : 'diff-bad') : '';
+      return '<tr><td>'+f+'</td><td class="num">'+fmtQ(v.computedTotal ? v.computedTotal[f] : result.grandTotal[f])+'</td><td class="num">'+official+'</td><td class="num '+cls+'">'+diffTxt+'</td></tr>';
+    }).join('');
+    document.getElementById('xlsxDiffBody').innerHTML = rowsHtml;
+    document.getElementById('xlsxMeta').textContent = result.programas.length+' programas · '+result.obrasPendientesSinIniciar.length+' obras pendientes'+(result.period?(' · corte '+result.period.periodEnd):'');
+    previewEl.style.display = 'block';
+    if(v.ok === true){
+      statusEl.className='status-msg ok';
+      statusEl.textContent='Coincide con el total oficial del reporte en los campos que la fila TOTAL trae disponibles. Listo para guardar.';
+    } else if(v.ok === false){
+      statusEl.className='status-msg err';
+      statusEl.textContent='El total calculado no coincide exacto con la fila TOTAL del reporte (diferencia máxima Q'+v.maxDiff.toLocaleString('en-US',{minimumFractionDigits:2})+'). Revisa la tabla antes de guardar.';
+    } else {
+      statusEl.className='status-msg';
+      statusEl.textContent='No se encontró una fila "TOTAL" reconocible para validar automáticamente. Revisa que el número de obras/renglones se vea razonable antes de guardar.';
+    }
+    if(!result.period || !result.period.periodEnd){
+      statusEl.className='status-msg err';
+      statusEl.textContent += ' No se pudo detectar la fecha del corte ("Periodo del... al...") en el archivo — no se podrá guardar hasta resolver esto.';
+    }
+  }
+
+  document.getElementById('xlsxFileInput').addEventListener('change', function(e){
+    var file = e.target.files && e.target.files[0];
+    var statusEl = document.getElementById('xlsxStatus');
+    document.getElementById('xlsxPreview').style.display = 'none';
+    lastXlsxParseResult = null;
+    if(!file) return;
+    statusEl.className='status-msg'; statusEl.textContent='Leyendo archivo…';
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try{
+        var data = new Uint8Array(ev.target.result);
+        var wb = XLSX.read(data, {type:'array'});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:''});
+        var result = parseExcelSicoin(rows);
+        renderXlsxResult(result);
+      }catch(err){
+        console.error('Error leyendo Excel:', err);
+        statusEl.className='status-msg err';
+        statusEl.textContent='No se pudo leer el archivo: '+(err && err.message ? err.message : err);
+      }
+    };
+    reader.onerror = function(){
+      statusEl.className='status-msg err'; statusEl.textContent='No se pudo leer el archivo.';
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  document.getElementById('btnClearXlsx').addEventListener('click', function(){
+    document.getElementById('xlsxFileInput').value='';
+    document.getElementById('xlsxStatus').className='status-msg'; document.getElementById('xlsxStatus').textContent='';
+    document.getElementById('xlsxPreview').style.display='none';
+    lastXlsxParseResult = null;
+  });
+
+  document.getElementById('btnSaveXlsx').addEventListener('click', function(){
+    var statusEl = document.getElementById('xlsxStatus');
+    if(!lastXlsxParseResult){ statusEl.className='status-msg err'; statusEl.textContent='Sube y analiza el archivo primero.'; return; }
+    if(lastXlsxParseResult.validation.ok === false){
+      if(!confirm('El total calculado no coincide exacto con el del reporte. ¿Guardar de todas formas?')) return;
+    }
+    var period = lastXlsxParseResult.period || {};
+    var periodEnd = period.periodEnd;
+    var periodStart = period.periodStart || periodEnd;
+    if(!periodEnd){ statusEl.className='status-msg err'; statusEl.textContent='No se pudo detectar la fecha del corte en el archivo.'; return; }
+    var rows = flattenPrograms(lastXlsxParseResult.programas, periodEnd, periodStart, currentMemberName());
+    if(!rows.length){ statusEl.className='status-msg err'; statusEl.textContent='No se generó ninguna obra a partir del archivo.'; return; }
+    saveSnapshot(periodEnd, periodStart, rows, 'xlsxStatus');
+  });
+
+  document.getElementById('btnSaveAuto').addEventListener('click', function(){
+    var statusEl = document.getElementById('autoStatus');
+    if(!lastParseResult){ statusEl.className='status-msg err'; statusEl.textContent='Analiza el texto primero.'; return; }
+    if(!lastParseResult.validation.ok){
+      if(!confirm('El total calculado no coincide exacto con el del reporte. ¿Guardar de todas formas? Los datos podrían estar incompletos o mal agrupados.')) return;
+    }
+    var period = lastParseResult.period || {};
+    var periodEnd = period.periodEnd;
+    var periodStart = period.periodStart || periodEnd;
+    if(!periodEnd){ statusEl.className='status-msg err'; statusEl.textContent='No se pudo detectar la fecha del corte en el reporte.'; return; }
+    var rows = flattenPrograms(lastParseResult.programas, periodEnd, periodStart, currentMemberName());
+    if(!rows.length){ statusEl.className='status-msg err'; statusEl.textContent='No se generó ninguna obra a partir del texto.'; return; }
+    saveSnapshot(periodEnd, periodStart, rows, 'autoStatus');
+  });
+
+  document.getElementById('btnExport').addEventListener('click', function(){
+    var all = [];
+    state.snapshots.forEach(function(s){ all = all.concat(s.rows); });
+    var blob = new Blob([JSON.stringify(all, null, 2)], {type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'ejecucion_presupuestaria_totonicapan_backup.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  function subscribeRealtime(){
+    if(!supabaseClient) return;
+    supabaseClient.channel('budget_obras_changes')
+      .on('postgres_changes', { event:'*', schema:'public', table:TABLE }, async function(){
+        state.snapshots = await loadSnapshots();
+        render();
+        flashSyncBanner('Datos actualizados: un integrante del equipo cargó o modificó un corte.');
+      })
+      .subscribe();
+  }
+
+  (async function init(){
+    var savedName = localStorage.getItem('budget_dashboard_member_name');
+    if(savedName) document.getElementById('memberName').value = savedName;
+    state.snapshots = await loadSnapshots();
+    if(state.snapshots.length) state.selectedPeriod = state.snapshots[state.snapshots.length-1].periodEnd;
+    render();
+    subscribeRealtime();
+
+    document.getElementById('btnRefresh').addEventListener('click', async function(){
+      var btn = this;
+      var original = btn.textContent;
+      btn.disabled = true; btn.textContent = 'Actualizando…';
+      var keepPeriod = state.selectedPeriod;
+      state.snapshots = await loadSnapshots();
+      // si el corte que se estaba viendo sigue existiendo, seguimos mostrando
+      // ese; si no, mostramos el más reciente disponible.
+      var stillExists = state.snapshots.some(function(s){ return s.periodEnd===keepPeriod; });
+      state.selectedPeriod = stillExists ? keepPeriod : (state.snapshots.length ? state.snapshots[state.snapshots.length-1].periodEnd : null);
+      render();
+      btn.disabled = false; btn.textContent = original;
+      flashSyncBanner('Datos actualizados desde Supabase.');
+    });
+  })();
+
+})();
+</script>
+</body>
+</html>
