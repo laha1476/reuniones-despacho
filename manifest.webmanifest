@@ -1,0 +1,16 @@
+{
+  "name": "Gestión y Seguimiento — Despacho Municipal",
+  "short_name": "Despacho",
+  "description": "Reuniones, compromisos y seguimiento del Despacho Municipal.",
+  "lang": "es",
+  "start_url": "reuniones-notas.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F4F6F8",
+  "theme_color": "#10161D",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
