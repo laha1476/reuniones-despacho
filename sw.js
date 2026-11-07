@@ -1,7 +1,7 @@
 // Service worker del Despacho: permite instalar la app y abrirla aunque la señal sea mala.
 // Los datos (Supabase) NUNCA se guardan aquí: siempre van directo a la red.
 // Al cambiar archivos de la app, sube este número para limpiar la copia vieja.
-const VERSION = 'despacho-v2';
+const VERSION = 'despacho-v3';
 const APP_SHELL = [
   'reuniones-notas.html',
   'manifest.webmanifest',
